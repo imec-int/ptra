@@ -20,8 +20,8 @@ package ptra_test
 
 import (
 	"fmt"
-	"ptra/app"
-	"ptra/trajectory"
+	"github.com/imec-int/ptra/app"
+	"github.com/imec-int/ptra/trajectory"
 	"testing"
 )
 

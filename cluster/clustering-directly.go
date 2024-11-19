@@ -22,13 +22,13 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"github.com/imec-int/ptra/trajectory"
+	"github.com/imec-int/ptra/utils"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"ptra/trajectory"
-	"ptra/utils"
 	"strconv"
 )
 

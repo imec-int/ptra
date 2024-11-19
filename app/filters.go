@@ -19,7 +19,7 @@
 package app
 
 import (
-	"ptra/trajectory"
+	"github.com/imec-int/ptra/trajectory"
 	"strings"
 )
 

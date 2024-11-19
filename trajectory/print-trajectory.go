@@ -20,9 +20,9 @@ package trajectory
 
 import (
 	"fmt"
+	"github.com/imec-int/ptra/utils"
 	"os"
 	"path/filepath"
-	"ptra/utils"
 	"strconv"
 )
 

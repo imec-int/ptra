@@ -20,11 +20,11 @@ package main
 
 import (
 	"bytes"
+	"github.com/imec-int/ptra/app"
+	"github.com/imec-int/ptra/cluster"
+	"github.com/imec-int/ptra/trajectory"
+	"github.com/imec-int/ptra/utils"
 	"log"
-	"ptra/app"
-	"ptra/cluster"
-	"ptra/trajectory"
-	"ptra/utils"
 	"strconv"
 	"strings"
 
