@@ -208,11 +208,11 @@ func printTrajectoriesToIndividualGraphsFile(exp *Experiment, name string) {
 // PrintTrajectoriesToFile outputs an experiment's calculated trajectories to file in multiple formats:
 // - A tab file containing trajectories as lists of medical terms and lists of numbers of patients for each transition
 // - A tab file containing all disease pairs and their relative risk scores (medical terms + float for RR)
-// - A GML file with one graph reprsenting all trajectories
-// - A GML file where each trajectory is represented as an individula subgraph
+// - A GML file with one graph representing all trajectories
+// - A GML file where each trajectory is represented as an individual subgraph
 func PrintTrajectoriesToFile(exp *Experiment, path string) {
 	// print the trajectories to file
-	// create a file where all trajectories are seperate graphs
+	// create a file where all trajectories are separate graphs
 	// create a file where all trajectories are combined into 1 graph
 	// create a file that just has each trajectory as a tab seperated list of disease codes
 	tabFileName := filepath.Join(path, fmt.Sprintf("%s-trajectories.tab", exp.Name))
