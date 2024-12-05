@@ -419,6 +419,6 @@ func main() {
 		}
 		fmt.Println("MCL Clustering:")
 		//ClusterTrajectories(exp, clusterGranularityList, outputPath, mclPath)
-		cluster.ClusterTrajectoriesDirectly(exp, clusterGranularityList, outputPath, mclPath)
+		cluster.ClusterTrajectoriesDirectly(exp, clusterGranularityList, outputPath)
 	}
 }
