@@ -23,6 +23,88 @@ import (
 	"strings"
 )
 
+func GetPatientFilter(s string, tinfo map[string][]*TumorInfo) trajectory.PatientFilter {
+	id := func(p *trajectory.Patient) bool { return true }
+	switch s {
+	case "id":
+		return id
+	case "age70+":
+		return trajectory.AboveSeventyAggregator()
+	case "age70-":
+		return trajectory.LessThanSeventyAggregator()
+	case "male":
+		return trajectory.FemaleFilter()
+	case "female":
+		return trajectory.MaleFilter()
+	case "Ta":
+		return TaStageAggregator(tinfo)
+	case "T1":
+		return T1StageAggregator(tinfo)
+	case "Tis":
+		return TisStageAggregator(tinfo)
+	case "T2":
+		return T2StageAggregator(tinfo)
+	case "T3":
+		return T3StageAggregator(tinfo)
+	case "T4":
+		return T4StageAggregator(tinfo)
+	case "N0":
+		return N0StageAggregator(tinfo)
+	case "N1":
+		return N1StageAggregator(tinfo)
+	case "N2":
+		return N2StageAggregator(tinfo)
+	case "N3":
+		return N3StageAggregator(tinfo)
+	case "M0":
+		return M0StageAggregator(tinfo)
+	case "M1":
+		return M1StageAggregator(tinfo)
+	case "EOI-":
+		return trajectory.EOIAfterFilter()
+	case "EOI+":
+		return trajectory.EOIBeforeFilter()
+	case "MIBC":
+		return MIBCAggregator(tinfo)
+	case "NMIBC":
+		return NMIBCAggregator(tinfo)
+	case "mUC":
+		return MUCAggregator(tinfo)
+	default:
+		return id
+	}
+}
+
+func GetPatientFilters(filters string, tinfo map[string][]*TumorInfo) []trajectory.PatientFilter {
+	var result []trajectory.PatientFilter
+	for _, f := range strings.Split(filters, ",") {
+		trimmed := strings.Trim(f, " ")
+		result = append(result, GetPatientFilter(trimmed, tinfo))
+	}
+	return result
+}
+
+func GetTrajectoryFilters(filters string, exp *trajectory.Experiment) []trajectory.TrajectoryFilter {
+	var result []trajectory.TrajectoryFilter
+	for _, f := range strings.Split(filters, ",") {
+		trimmed := strings.Trim(f, " ")
+		result = append(result, GetTrajectoryFilter(trimmed, exp))
+	}
+	return result
+}
+
+func GetTrajectoryFilter(filter string, exp *trajectory.Experiment) trajectory.TrajectoryFilter {
+	id := func(t *trajectory.Trajectory) bool { return true }
+	switch filter {
+	case "neoplasm":
+		return CancerTrajectoryFilter(exp)
+	case "bc":
+		return BladderCancerTrajectoryFilter(exp)
+	default:
+		return id
+	}
+}
+
 // cancerStageAggregator filters a set of patients to only include those that satisfy a given predicate that is applied
 // on the patient's tumor information (which encodes cancer stages etc).
 func cancerStageAggregator(predicate func(tInfo *TumorInfo) bool, tInfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
