@@ -150,96 +150,96 @@ func getFileName(s, help string) string {
 }
 
 func main() {
-	var args = app.ExperimentArgs{}
+	var params = app.ExperimentParams{}
 	var flags flag.FlagSet
 
-	// extract ExperimentArgs from command line args
-	flags.IntVar(&args.NofAgeGroups, "nofAgeGroups", 6, "The population data is divided in cohorts in"+
+	// extract ExperimentParams from command line params
+	flags.IntVar(&params.NofAgeGroups, "nofAgeGroups", 6, "The population data is divided in cohorts in"+
 		"terms of age groups to calculate relative risk ratios of diagnosis pairs. This parameters configures how"+
 		"many age groups to use")
-	flags.IntVar(&args.NrOfThreads, "nrOfThreads", 0, "The number of threads ptra uses.")
-	flags.IntVar(&args.Lvl, "lvl", 3, "Diagnosis codes are organised in a hierarchy of diagnosis "+
+	flags.IntVar(&params.NrOfThreads, "nrOfThreads", 0, "The number of threads ptra uses.")
+	flags.IntVar(&params.Lvl, "lvl", 3, "Diagnosis codes are organised in a hierarchy of diagnosis "+
 		"descriptors. The level says which descriptor in the hiearchy to use for trajectory building.")
-	flags.Float64Var(&args.MaxYears, "maxYears", 5.0, "The maximum number of years between diagnosis "+
+	flags.Float64Var(&params.MaxYears, "maxYears", 5.0, "The maximum number of years between diagnosis "+
 		"A and B to consider the diagnosis pair A->B in a trajectory.")
-	flags.Float64Var(&args.MinYears, "minYears", 0.5, "The minimum number of years between diagnisis "+
+	flags.Float64Var(&params.MinYears, "minYears", 0.5, "The minimum number of years between diagnisis "+
 		"A and B to consider the diagnosis pair A->B in a trajectory.")
-	flags.IntVar(&args.MinPatients, "minPatients", 1000, "The minimum number of patients for the last "+
+	flags.IntVar(&params.MinPatients, "minPatients", 1000, "The minimum number of patients for the last "+
 		"diagnosis in a trajectory")
-	flags.IntVar(&args.MaxTrajectoryLength, "maxTrajectoryLength", 5, "The maximum number of diagnoses"+
+	flags.IntVar(&params.MaxTrajectoryLength, "maxTrajectoryLength", 5, "The maximum number of diagnoses"+
 		" in a trajectory")
-	flags.IntVar(&args.MinTrajectoryLength, "minTrajectoryLength", 3, "The minimum number of "+
+	flags.IntVar(&params.MinTrajectoryLength, "minTrajectoryLength", 3, "The minimum number of "+
 		"diagnoses in a trajectory")
-	flags.StringVar(&args.Name, "name", "exp1", "The name of the run. This is used to generate the "+
+	flags.StringVar(&params.Name, "name", "exp1", "The name of the run. This is used to generate the "+
 		"names of the output files.")
-	flags.StringVar(&args.ICD9ToICD10File, "ICD9ToICD10File", "", "A json file that maps ICD9 to "+
+	flags.StringVar(&params.ICD9ToICD10File, "ICD9ToICD10File", "", "A json file that maps ICD9 to "+
 		"ICD10 codes.")
-	flags.BoolVar(&args.Cluster, "cluster", false, "Cluster the trajectories using MCL and output "+
+	flags.BoolVar(&params.Cluster, "cluster", false, "Cluster the trajectories using MCL and output "+
 		"the results")
-	flags.StringVar(&args.ClusterGranularities, "clusterGranularities", "40,60,80,100", "The "+
+	flags.StringVar(&params.ClusterGranularities, "clusterGranularities", "40,60,80,100", "The "+
 		"granularities used for the mcl clustering step.") // recommended 14,20,40,60
-	flags.IntVar(&args.Iter, "iter", 10000, "The minimum number of sampling iterations "+
+	flags.IntVar(&params.Iter, "iter", 10000, "The minimum number of sampling iterations "+
 		"diagnosis in a trajectory")
-	flags.Float64Var(&args.RR, "RR", 1.0, "The minimum RR score for considering pairs.")
-	flags.StringVar(&args.SaveRR, "saveRR", "", "Save the RR matrix to a file so it can be loaded for "+
+	flags.Float64Var(&params.RR, "RR", 1.0, "The minimum RR score for considering pairs.")
+	flags.StringVar(&params.SaveRR, "saveRR", "", "Save the RR matrix to a file so it can be loaded for "+
 		"later runs")
-	flags.StringVar(&args.LoadRR, "loadRR", "", "Load the RR matrix from a given file instead of "+
+	flags.StringVar(&params.LoadRR, "loadRR", "", "Load the RR matrix from a given file instead of "+
 		"calculating it from scratch.")
-	flags.StringVar(&args.PFilters, "pfilters", "id", "A list of pfilters to restrict analysis on specific "+
+	flags.StringVar(&params.PFilters, "pfilters", "id", "A list of pfilters to restrict analysis on specific "+
 		"patients.")
-	flags.StringVar(&args.TumorInfo, "tumorInfo", "", "A file with information about the tumor stages.")
-	flags.StringVar(&args.TreatmentInfo, "treatmentInfo", "", "A file with information about patient cancer stages.")
-	flags.StringVar(&args.TFilters, "tfilters", "id", "A list of pfilters to restrict output of trajectories")
+	flags.StringVar(&params.TumorInfo, "tumorInfo", "", "A file with information about the tumor stages.")
+	flags.StringVar(&params.TreatmentInfo, "treatmentInfo", "", "A file with information about patient cancer stages.")
+	flags.StringVar(&params.TFilters, "tfilters", "id", "A list of pfilters to restrict output of trajectories")
 
 	// parse optional arguments
 	parseFlags(flags, 5, ptraHelp)
 
 	// parse required arguments
-	args.PatientInfo = getFileName(os.Args[1], ptraHelp)
-	args.DiagnosisInfo = getFileName(os.Args[2], ptraHelp)
-	args.PatientDiagnoses = getFileName(os.Args[3], ptraHelp)
-	args.OutputPath, _ = filepath.Abs(getFileName(os.Args[4], ptraHelp))
-	fmt.Println("Output path: ", args.OutputPath)
+	params.PatientInfo = getFileName(os.Args[1], ptraHelp)
+	params.DiagnosisInfo = getFileName(os.Args[2], ptraHelp)
+	params.PatientDiagnoses = getFileName(os.Args[3], ptraHelp)
+	params.OutputPath, _ = filepath.Abs(getFileName(os.Args[4], ptraHelp))
+	fmt.Println("Output path: ", params.OutputPath)
 
 	// build an output command line
 	var command bytes.Buffer
-	fmt.Fprint(&command, os.Args[0], " ", args.PatientInfo, " ", args.DiagnosisInfo, " ", args.PatientDiagnoses,
-		" ", args.OutputPath)
-	fmt.Fprint(&command, " --nofAgeGroups ", args.NofAgeGroups)
-	fmt.Fprint(&command, " --lvl ", args.Lvl)
-	fmt.Fprint(&command, " --maxYears ", args.MaxYears)
-	fmt.Fprint(&command, " --minYears ", args.MinYears)
-	fmt.Fprint(&command, " --minPatients ", args.MinPatients)
-	fmt.Fprint(&command, " --maxTrajectoryLength ", args.MaxTrajectoryLength)
-	fmt.Fprint(&command, " --minTrajectoryLength ", args.MinTrajectoryLength)
-	fmt.Fprint(&command, " --name ", args.Name)
-	fmt.Fprint(&command, " --ICD9ToICD10File ", args.ICD9ToICD10File)
-	fmt.Fprint(&command, " --iter ", args.Iter)
-	fmt.Fprint(&command, " --RR ", args.RR)
-	fmt.Fprint(&command, " --tumorInfo ", args.TumorInfo)
-	fmt.Fprint(&command, " --treatmentInfo ", args.TreatmentInfo)
+	fmt.Fprint(&command, os.Args[0], " ", params.PatientInfo, " ", params.DiagnosisInfo, " ", params.PatientDiagnoses,
+		" ", params.OutputPath)
+	fmt.Fprint(&command, " --nofAgeGroups ", params.NofAgeGroups)
+	fmt.Fprint(&command, " --lvl ", params.Lvl)
+	fmt.Fprint(&command, " --maxYears ", params.MaxYears)
+	fmt.Fprint(&command, " --minYears ", params.MinYears)
+	fmt.Fprint(&command, " --minPatients ", params.MinPatients)
+	fmt.Fprint(&command, " --maxTrajectoryLength ", params.MaxTrajectoryLength)
+	fmt.Fprint(&command, " --minTrajectoryLength ", params.MinTrajectoryLength)
+	fmt.Fprint(&command, " --name ", params.Name)
+	fmt.Fprint(&command, " --ICD9ToICD10File ", params.ICD9ToICD10File)
+	fmt.Fprint(&command, " --iter ", params.Iter)
+	fmt.Fprint(&command, " --RR ", params.RR)
+	fmt.Fprint(&command, " --tumorInfo ", params.TumorInfo)
+	fmt.Fprint(&command, " --treatmentInfo ", params.TreatmentInfo)
 
-	if args.SaveRR != "" {
-		fmt.Fprint(&command, " --saveRR ", args.SaveRR)
+	if params.SaveRR != "" {
+		fmt.Fprint(&command, " --saveRR ", params.SaveRR)
 	}
 
-	if args.LoadRR != "" {
-		fmt.Fprint(&command, " --loadRR ", args.LoadRR)
+	if params.LoadRR != "" {
+		fmt.Fprint(&command, " --loadRR ", params.LoadRR)
 	}
 
-	if args.Cluster {
+	if params.Cluster {
 		fmt.Fprint(&command, " --cluster")
-		fmt.Fprint(&command, " --clusterGranularities ", args.ClusterGranularities)
+		fmt.Fprint(&command, " --clusterGranularities ", params.ClusterGranularities)
 	}
 
-	fmt.Fprint(&command, " --pfilters ", args.PFilters)
-	fmt.Fprint(&command, " --tfilters ", args.TFilters)
+	fmt.Fprint(&command, " --pfilters ", params.PFilters)
+	fmt.Fprint(&command, " --tfilters ", params.TFilters)
 
-	if args.NrOfThreads > 0 {
-		fmt.Fprint(&command, " --nrOfThreads ", args.NrOfThreads)
+	if params.NrOfThreads > 0 {
+		fmt.Fprint(&command, " --nrOfThreads ", params.NrOfThreads)
 	}
 
-	err := app.Run(&args)
+	err := app.Run(&params)
 	if err != nil {
 		panic(err)
 	}

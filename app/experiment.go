@@ -33,7 +33,7 @@ import (
 	"runtime"
 )
 
-type ExperimentArgs struct {
+type ExperimentParams struct {
 	// required parameters
 	Name             string
 	PatientInfo      string // path to the file with patient information (ID, gender," + birthyear, etc)
@@ -64,7 +64,7 @@ type ExperimentArgs struct {
 }
 
 // Run the experiment.
-func Run(args *ExperimentArgs) (err error) {
+func Run(args *ExperimentParams) (err error) {
 	defer func() {
 		// as a  last resort, we can catch panics to avoid crashing the app
 		// however, we should NOT rely on this to propagate errors to the FE
