@@ -1,41 +1,13 @@
-// PTRA: Patient Trajectory Analysis Library
-// Copyright (c) 2022 imec vzw.
-
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Affero General Public License as
-// published by the Free Software Foundation, either version 3 of the
-// License, or (at your option) any later version, and Additional Terms
-// (see below).
-
-// This program is distributed in the hope that it will be useful, but
-// WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-// Affero General Public License for more details.
-
-// You should have received a copy of the GNU Affero General Public
-// License and Additional Terms along with this program. If not, see
-// <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
-
 package main
 
 import (
 	"bytes"
-	"github.com/imec-int/ptra/app"
-	"github.com/imec-int/ptra/cluster"
-	"github.com/imec-int/ptra/trajectory"
-	"github.com/imec-int/ptra/utils"
-	"log"
-	"strconv"
-	"strings"
-
-	//"bytes"
 	"flag"
 	"fmt"
+	"github.com/imec-int/ptra/app"
 	"io/ioutil"
-	"path/filepath"
-
-	//"log"
 	"os"
+	"path/filepath"
 	"runtime"
 )
 
@@ -177,248 +149,98 @@ func getFileName(s, help string) string {
 	return s
 }
 
-func getPatientFilter(s string, tinfo map[string][]*app.TumorInfo) trajectory.PatientFilter {
-	id := func(p *trajectory.Patient) bool { return true }
-	switch s {
-	case "id":
-		return id
-	case "age70+":
-		return trajectory.AboveSeventyAggregator()
-	case "age70-":
-		return trajectory.LessThanSeventyAggregator()
-	case "male":
-		return trajectory.FemaleFilter()
-	case "female":
-		return trajectory.MaleFilter()
-	case "Ta":
-		return app.TaStageAggregator(tinfo)
-	case "T1":
-		return app.T1StageAggregator(tinfo)
-	case "Tis":
-		return app.TisStageAggregator(tinfo)
-	case "T2":
-		return app.T2StageAggregator(tinfo)
-	case "T3":
-		return app.T3StageAggregator(tinfo)
-	case "T4":
-		return app.T4StageAggregator(tinfo)
-	case "N0":
-		return app.N0StageAggregator(tinfo)
-	case "N1":
-		return app.N1StageAggregator(tinfo)
-	case "N2":
-		return app.N2StageAggregator(tinfo)
-	case "N3":
-		return app.N3StageAggregator(tinfo)
-	case "M0":
-		return app.M0StageAggregator(tinfo)
-	case "M1":
-		return app.M1StageAggregator(tinfo)
-	case "EOI-":
-		return trajectory.EOIAfterFilter()
-	case "EOI+":
-		return trajectory.EOIBeforeFilter()
-	case "MIBC":
-		return app.MIBCAggregator(tinfo)
-	case "NMIBC":
-		return app.NMIBCAggregator(tinfo)
-	case "mUC":
-		return app.MUCAggregator(tinfo)
-	default:
-		return id
-	}
-}
-
-func getPatientFilters(f string, tinfo map[string][]*app.TumorInfo) []trajectory.PatientFilter {
-	fs := strings.Split(f, ",")
-	result := []trajectory.PatientFilter{}
-	for _, f := range fs {
-		result = append(result, getPatientFilter(f, tinfo))
-	}
-	return result
-}
-
-func getTrajectoryFilter(s string, exp *trajectory.Experiment) trajectory.TrajectoryFilter {
-	id := func(t *trajectory.Trajectory) bool { return true }
-	switch s {
-	case "neoplasm":
-		return app.CancerTrajectoryFilter(exp)
-	case "bc":
-		return app.BladderCancerTrajectoryFilter(exp)
-	default:
-		return id
-	}
-}
-
-func getTrajectoryFilters(f string, exp *trajectory.Experiment) []trajectory.TrajectoryFilter {
-	fs := strings.Split(f, ",")
-	result := []trajectory.TrajectoryFilter{}
-	for _, f := range fs {
-		result = append(result, getTrajectoryFilter(f, exp))
-	}
-	return result
-}
-
 func main() {
-	var (
-		// required parameters
-		patientInfo      string //The file with patient information (ID, gender," + birthyear, etc)
-		diagnosisInfo    string //The file with diagnosis information (ID,descriptor, hierarchy, etc)
-		patientDiagnoses string //The file with patient diagnoses.
-		outputPath       string //The path where output files are written.
-		// optional flags
-		nofAgeGroups         int
-		lvl                  int
-		maxYears             float64
-		minYears             float64
-		minPatients          int
-		maxTrajectoryLength  int
-		minTrajectoryLength  int
-		name                 string
-		ICD9ToICD10File      string
-		clust                bool
-		mclPath              string
-		clusterGranularities string
-		iter                 int
-		rr                   float64
-		saveRR               string
-		loadRR               string
-		pfilters             string
-		tfilters             string
-		tumorInfo            string
-		treatmentInfo        string
-		nrOfThreads          int
-	)
+	var args = app.ExperimentArgs{}
 	var flags flag.FlagSet
-	// options for the ptra command
-	flags.IntVar(&nofAgeGroups, "nofAgeGroups", 6, "The population data is divided in cohorts in"+
+
+	// extract ExperimentArgs from command line args
+	flags.IntVar(&args.NofAgeGroups, "nofAgeGroups", 6, "The population data is divided in cohorts in"+
 		"terms of age groups to calculate relative risk ratios of diagnosis pairs. This parameters configures how"+
 		"many age groups to use")
-	flags.IntVar(&nrOfThreads, "nrOfThreads", 0, "The number of threads ptra uses.")
-	flags.IntVar(&lvl, "lvl", 3, "Diagnosis codes are organised in a hierarchy of diagnosis "+
+	flags.IntVar(&args.NrOfThreads, "nrOfThreads", 0, "The number of threads ptra uses.")
+	flags.IntVar(&args.Lvl, "lvl", 3, "Diagnosis codes are organised in a hierarchy of diagnosis "+
 		"descriptors. The level says which descriptor in the hiearchy to use for trajectory building.")
-	flags.Float64Var(&maxYears, "maxYears", 5.0, "The maximum number of years between diagnosis "+
+	flags.Float64Var(&args.MaxYears, "maxYears", 5.0, "The maximum number of years between diagnosis "+
 		"A and B to consider the diagnosis pair A->B in a trajectory.")
-	flags.Float64Var(&minYears, "minYears", 0.5, "The minimum number of years between diagnisis "+
+	flags.Float64Var(&args.MinYears, "minYears", 0.5, "The minimum number of years between diagnisis "+
 		"A and B to consider the diagnosis pair A->B in a trajectory.")
-	flags.IntVar(&minPatients, "minPatients", 1000, "The minimum number of patients for the last "+
+	flags.IntVar(&args.MinPatients, "minPatients", 1000, "The minimum number of patients for the last "+
 		"diagnosis in a trajectory")
-	flags.IntVar(&maxTrajectoryLength, "maxTrajectoryLength", 5, "The maximum number of diagnoses"+
+	flags.IntVar(&args.MaxTrajectoryLength, "maxTrajectoryLength", 5, "The maximum number of diagnoses"+
 		" in a trajectory")
-	flags.IntVar(&minTrajectoryLength, "minTrajectoryLength", 3, "The minimum number of "+
+	flags.IntVar(&args.MinTrajectoryLength, "minTrajectoryLength", 3, "The minimum number of "+
 		"diagnoses in a trajectory")
-	flags.StringVar(&name, "name", "exp1", "The name of the run. This is used to generate the "+
+	flags.StringVar(&args.Name, "name", "exp1", "The name of the run. This is used to generate the "+
 		"names of the output files.")
-	flags.StringVar(&ICD9ToICD10File, "ICD9ToICD10File", "", "A json file that maps ICD9 to "+
+	flags.StringVar(&args.ICD9ToICD10File, "ICD9ToICD10File", "", "A json file that maps ICD9 to "+
 		"ICD10 codes.")
-	flags.BoolVar(&clust, "cluster", false, "Cluster the trajectories using MCL and output "+
+	flags.BoolVar(&args.Cluster, "cluster", false, "Cluster the trajectories using MCL and output "+
 		"the results")
-	flags.StringVar(&mclPath, "mclPath", "", "The path to the mcl binary.")
-	flags.StringVar(&clusterGranularities, "clusterGranularities", "40,60,80,100", "The "+
+	flags.StringVar(&args.ClusterGranularities, "clusterGranularities", "40,60,80,100", "The "+
 		"granularities used for the mcl clustering step.") // recommended 14,20,40,60
-	flags.IntVar(&iter, "iter", 10000, "The minimum number of sampling iterations "+
+	flags.IntVar(&args.Iter, "iter", 10000, "The minimum number of sampling iterations "+
 		"diagnosis in a trajectory")
-	flags.Float64Var(&rr, "RR", 1.0, "The minimum RR score for considering pairs.")
-	flags.StringVar(&saveRR, "saveRR", "", "Save the RR matrix to a file so it can be loaded for "+
+	flags.Float64Var(&args.RR, "RR", 1.0, "The minimum RR score for considering pairs.")
+	flags.StringVar(&args.SaveRR, "saveRR", "", "Save the RR matrix to a file so it can be loaded for "+
 		"later runs")
-	flags.StringVar(&loadRR, "loadRR", "", "Load the RR matrix from a given file instead of "+
+	flags.StringVar(&args.LoadRR, "loadRR", "", "Load the RR matrix from a given file instead of "+
 		"calculating it from scratch.")
-	flags.StringVar(&pfilters, "pfilters", "id", "A list of pfilters to restrict analysis on specific "+
+	flags.StringVar(&args.PFilters, "pfilters", "id", "A list of pfilters to restrict analysis on specific "+
 		"patients.")
-	flags.StringVar(&tumorInfo, "tumorInfo", "", "A file with information about the tumor stages.")
-	flags.StringVar(&treatmentInfo, "treatmentInfo", "", "A file with information about patient cancer stages.")
-	flags.StringVar(&tfilters, "tfilters", "id", "A list of pfilters to restrict output of trajectories")
+	flags.StringVar(&args.TumorInfo, "tumorInfo", "", "A file with information about the tumor stages.")
+	flags.StringVar(&args.TreatmentInfo, "treatmentInfo", "", "A file with information about patient cancer stages.")
+	flags.StringVar(&args.TFilters, "tfilters", "id", "A list of pfilters to restrict output of trajectories")
+
 	// parse optional arguments
 	parseFlags(flags, 5, ptraHelp)
+
 	// parse required arguments
-	patientInfo = getFileName(os.Args[1], ptraHelp)
-	diagnosisInfo = getFileName(os.Args[2], ptraHelp)
-	patientDiagnoses = getFileName(os.Args[3], ptraHelp)
-	outputPath, _ = filepath.Abs(getFileName(os.Args[4], ptraHelp))
-	outputPath = outputPath + string(filepath.Separator)
-	fmt.Println("Output path: ", outputPath)
-	// create output directory
-	err := os.MkdirAll(filepath.Dir(outputPath), 0700)
-	if err != nil {
-		panic(err)
-	}
+	args.PatientInfo = getFileName(os.Args[1], ptraHelp)
+	args.DiagnosisInfo = getFileName(os.Args[2], ptraHelp)
+	args.PatientDiagnoses = getFileName(os.Args[3], ptraHelp)
+	args.OutputPath, _ = filepath.Abs(getFileName(os.Args[4], ptraHelp))
+	fmt.Println("Output path: ", args.OutputPath)
+
 	// build an output command line
 	var command bytes.Buffer
-	fmt.Fprint(&command, os.Args[0], " ", patientInfo, " ", diagnosisInfo, " ", patientDiagnoses,
-		" ", outputPath)
-	fmt.Fprint(&command, " --nofAgeGroups ", nofAgeGroups)
-	fmt.Fprint(&command, " --lvl ", lvl)
-	fmt.Fprint(&command, " --maxYears ", maxYears)
-	fmt.Fprint(&command, " --minYears ", minYears)
-	fmt.Fprint(&command, " --minPatients ", minPatients)
-	fmt.Fprint(&command, " --maxTrajectoryLength ", maxTrajectoryLength)
-	fmt.Fprint(&command, " --minTrajectoryLength ", minTrajectoryLength)
-	fmt.Fprint(&command, " --name ", name)
-	fmt.Fprint(&command, " --ICD9ToICD10File ", ICD9ToICD10File)
-	fmt.Fprint(&command, " --iter ", iter)
-	fmt.Fprint(&command, " --RR ", rr)
-	fmt.Fprint(&command, " --tumorInfo ", tumorInfo)
-	fmt.Fprint(&command, " --treatmentInfo ", treatmentInfo)
-	if saveRR != "" {
-		fmt.Fprint(&command, " --saveRR ", saveRR)
+	fmt.Fprint(&command, os.Args[0], " ", args.PatientInfo, " ", args.DiagnosisInfo, " ", args.PatientDiagnoses,
+		" ", args.OutputPath)
+	fmt.Fprint(&command, " --nofAgeGroups ", args.NofAgeGroups)
+	fmt.Fprint(&command, " --lvl ", args.Lvl)
+	fmt.Fprint(&command, " --maxYears ", args.MaxYears)
+	fmt.Fprint(&command, " --minYears ", args.MinYears)
+	fmt.Fprint(&command, " --minPatients ", args.MinPatients)
+	fmt.Fprint(&command, " --maxTrajectoryLength ", args.MaxTrajectoryLength)
+	fmt.Fprint(&command, " --minTrajectoryLength ", args.MinTrajectoryLength)
+	fmt.Fprint(&command, " --name ", args.Name)
+	fmt.Fprint(&command, " --ICD9ToICD10File ", args.ICD9ToICD10File)
+	fmt.Fprint(&command, " --iter ", args.Iter)
+	fmt.Fprint(&command, " --RR ", args.RR)
+	fmt.Fprint(&command, " --tumorInfo ", args.TumorInfo)
+	fmt.Fprint(&command, " --treatmentInfo ", args.TreatmentInfo)
+
+	if args.SaveRR != "" {
+		fmt.Fprint(&command, " --saveRR ", args.SaveRR)
 	}
-	if loadRR != "" {
-		fmt.Fprint(&command, " --loadRR ", loadRR)
+
+	if args.LoadRR != "" {
+		fmt.Fprint(&command, " --loadRR ", args.LoadRR)
 	}
-	if clust {
+
+	if args.Cluster {
 		fmt.Fprint(&command, " --cluster")
-		fmt.Fprint(&command, " --mclPath ", mclPath)
-		fmt.Fprint(&command, " --clusterGranularities ", clusterGranularities)
+		fmt.Fprint(&command, " --clusterGranularities ", args.ClusterGranularities)
 	}
-	fmt.Fprint(&command, " --pfilters ", pfilters)
-	fmt.Fprint(&command, " --tfilters ", tfilters)
-	if nrOfThreads > 0 {
-		runtime.GOMAXPROCS(nrOfThreads)
-		fmt.Fprint(&command, " --nrOfThreads ", nrOfThreads)
+
+	fmt.Fprint(&command, " --pfilters ", args.PFilters)
+	fmt.Fprint(&command, " --tfilters ", args.TFilters)
+
+	if args.NrOfThreads > 0 {
+		fmt.Fprint(&command, " --nrOfThreads ", args.NrOfThreads)
 	}
-	// start execution
-	log.Println(programMessage())
-	log.Println("Executing command:\n", command.String())
-	//1. Parse inputs into experiment
-	// Parse Tumor info
-	tinfo := map[string][]*app.TumorInfo{} // filterInfo is a variable to pass around filter-specific information. E.g. parsed tumor data for the tumor stage filter.
-	if tumorInfo != "" {
-		tinfo = app.ParsetTriNetXTumorData(tumorInfo) // need parsed patients to be able to parse tumor data file
-	}
-	exp, patients := app.ParseTriNetXData("exp1", patientInfo, patientDiagnoses, diagnosisInfo,
-		treatmentInfo, nofAgeGroups, lvl, minYears, maxYears, ICD9ToICD10File, getPatientFilters(pfilters, tinfo))
-	//2. Initialise relative risk ratios or load them from file from a previous run
-	if loadRR != "" {
-		trajectory.LoadRRMatrix(exp, loadRR)
-		trajectory.LoadDxDPatients(exp, patients, fmt.Sprintf("%s.patients.csv", loadRR))
-	} else {
-		trajectory.InitializeExperimentRelativeRiskRatios(exp, minYears, maxYears, iter)
-	}
-	if saveRR != "" { //save RR matrix to file + DPatients
-		trajectory.SaveRRMatrix(exp, saveRR)
-		trajectory.SaveDxDPatients(exp, fmt.Sprintf("%s.patients.csv", saveRR))
-	}
-	// assist the gc and nil some exp data that is no longer needed after initializing RR
-	exp.Cohorts = nil
-	exp.DPatients = nil
-	//3. Build the trajectories
-	trajectory.BuildTrajectories(exp, minPatients, maxTrajectoryLength, minTrajectoryLength, minYears, maxYears, rr,
-		getTrajectoryFilters(tfilters, exp))
-	//4. Plot trajectories to file
-	trajectory.PrintTrajectoriesToFile(exp, outputPath)
-	fmt.Println("Collected trajectories: ")
-	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
-		trajectory.PrintTrajectory(exp.Trajectories[i], exp)
-	}
-	//5. Perform clustering
-	if clust {
-		var clusterGranularityList []int
-		for _, g := range strings.Split(clusterGranularities, ",") {
-			gi, _ := strconv.ParseInt(g, 10, 0)
-			clusterGranularityList = append(clusterGranularityList, int(gi))
-		}
-		fmt.Println("MCL Clustering:")
-		//ClusterTrajectories(exp, clusterGranularityList, outputPath, mclPath)
-		cluster.ClusterTrajectoriesDirectly(exp, clusterGranularityList, outputPath)
+
+	err := app.Run(&args)
+	if err != nil {
+		panic(err)
 	}
 }
