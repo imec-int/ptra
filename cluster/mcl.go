@@ -53,6 +53,5 @@ func run(cmd *exec.Cmd) error {
 		return errors.New(fmt.Sprintf("clustering failed: missing mcl binary \"%s\"", bin))
 	}
 
-	fmt.Printf("\n%s:\nout: %s", bin, stdout.String())
 	return nil
 }
