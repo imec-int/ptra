@@ -66,8 +66,7 @@ type ExperimentParams struct {
 // Run the experiment.
 func Run(args *ExperimentParams) (err error) {
 	defer func() {
-		// as a  last resort, we can catch panics to avoid crashing the app
-		// however, we should NOT rely on this to propagate errors to the FE
+		// converts any panics into errors to avoid crashing the app
 		if r := recover(); r != nil {
 			fmt.Println("Recovered from panic in experiment.Run:", r)
 			err = errors.New(fmt.Sprintf("failed to run experiment: %v", r))
