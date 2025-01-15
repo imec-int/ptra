@@ -143,15 +143,14 @@ The `ptra` command requires four arguments:
 
 `ptra` creates multiple output files: 
 
-1. a tab file with the found trajectories. The tab file contains three lines per trajectory. The first line lists Trajectory and Cluster IDs; the second line lists diagnoses 
-  in the trajectory, separated by tabs; the third line lists the number of patients between each transition in the trajectory.
+1. a tab file with the found trajectories. The tab file contains two lines per trajectory. The first line lists the diagnoses 
+  in the trajectory, separated by tabs. The second line lists the number of patients between each transition in the trajectory.
 
   Example:
 
   ```
-  CID:  \tab 0       \tab TID: \tab 22
   Cough \tab Dyspnea \tab COPD
-  150   \tab 50
+  150 \tab 50
   ```
 2. a tab file with the found diagnosis pairs and their relative risk scores. There is a single line that list the diagnoses and the RR.
   
