@@ -242,7 +242,7 @@ func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, o
 				n := t.PatientNumbers[i-1]
 				printed := edgePrinted[d1][d2]
 				if !utils.MemberInt(n, printed) {
-					fmt.Fprintf(ofile, fmt.Sprintf("edge [\nsource %d\ntarget %d\nlabel %d\n]\n", d1, d2, n))
+					fmt.Fprintf(ofile, fmt.Sprintf("edge [\ntid %d\nsource %d\ntarget %d\nlabel %d\n]\n", t.ID, d1, d2, n))
 					if printed == nil {
 						edgePrinted[d1][d2] = []int{n}
 					} else {
@@ -387,7 +387,7 @@ func convertToDirectTrajectoryClusterGraphsRR(exp *trajectory.Experiment, input,
 				if !edgePrinted[d1][d2] {
 					edgePrinted[d1][d2] = true
 					RR := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
-					fmt.Fprintf(ofile, fmt.Sprintf("edge [\nsource %d\ntarget %d\nlabel %s\n]\n", d1, d2, RR))
+					fmt.Fprintf(ofile, fmt.Sprintf("edge [\ntid %d,\nsource %d\ntarget %d\nlabel %s\n]\n", t.ID, d1, d2, RR))
 					//rr, mfratio, eoi := transitionInformation(exp, t, tctr, d1, d2)
 					//fmt.Fprintf(ofile, fmt.Sprintf("edge [\nsource %d\ntarget %d\nlabel \"RR:%s,M/F:%s,EOI:%s\"\n]\n", d1, d2, rr, mfratio, eoi))
 				}
