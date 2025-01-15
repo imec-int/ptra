@@ -21,6 +21,7 @@ package trajectory
 import (
 	"fmt"
 	"github.com/imec-int/ptra/utils"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -28,8 +29,8 @@ import (
 
 // Plotting of trajectories
 
-// PrintTrajectory prints a trajectory to standard output.
-func PrintTrajectory(t *Trajectory, exp *Experiment) {
+// LogTrajectory prints a trajectory to standard output.
+func LogTrajectory(t *Trajectory, exp *Experiment) {
 	j := 0
 	for i, d := range t.Diagnoses {
 		dName := exp.NameMap[d]
@@ -110,13 +111,13 @@ func convertTrajectoriesToGraph(exp *Experiment) ([]int, [][][]int) {
 	}
 	nodes := []int{}
 	for _, traj := range trajectories {
-		//collect nodes
+		// collect nodes
 		for _, d := range traj.Diagnoses {
 			if !utils.MemberInt(d, nodes) {
 				nodes = append(nodes, d)
 			}
 		}
-		//collect edges
+		// collect edges
 		i := 0
 		first := traj.Diagnoses[i]
 		for j := 1; j < len(traj.Diagnoses); j++ {
@@ -149,26 +150,35 @@ func printTrajectoriesToOneGraphFile(exp *Experiment, name string) {
 			panic(err)
 		}
 	}()
-	nodes, edges := convertTrajectoriesToGraph(exp)
-	// print header
+	// open graph
 	fmt.Fprintf(file, "graph [\n directed 1\nmultigraph 1\n")
+	trajects := exp.Trajectories
+	for _, traject := range trajects {
+		printTrajectory(*traject, exp.NameMap, file)
+	}
+	// close graph
+	fmt.Fprintf(file, "]\n")
+}
+
+func printTrajectory(trajectory Trajectory, nameMap map[int]string, w io.Writer) {
+	TID := trajectory.ID
+	nodes := trajectory.Diagnoses
+	edges := trajectory.Diagnoses
+	labels := trajectory.PatientNumbers
+	ctr := 0
+
 	// print nodes
 	for _, node := range nodes {
-		fmt.Fprintf(file, "node [ id %d\nlabel \"%s\"\n]\n", node, exp.NameMap[node])
+		fmt.Fprintf(w, "node [ \nid %d\nlabel \"%s\"\n]\n", ctr, nameMap[node])
+		ctr++
 	}
+
 	// print edges
-	for i, v := range edges {
-		for j, ns := range v {
-			if ns != nil {
-				nsstring := ""
-				for _, n := range ns {
-					nsstring = nsstring + strconv.Itoa(n) + ","
-				}
-				fmt.Fprintf(file, fmt.Sprintf("edge [\nsource %d\ntarget %d\nlabel \"%s\"\n]\n", i, j, nsstring))
-			}
-		}
+	nodeCtr := ctr - len(edges)
+	for i, j := 0, 0; i < len(edges)-1; i, j = i+1, j+1 {
+		fmt.Fprintf(w, fmt.Sprintf("edge [\ntid %d \nsource %d\ntarget %d\nlabel %d\n]\n", TID, nodeCtr, nodeCtr+1, labels[j]))
+		nodeCtr++
 	}
-	fmt.Fprintf(file, "]\n")
 }
 
 // printTrajectoriesToIndividualGraphsFile prints each trajectory as a separate subgraph to the same GML output file.
@@ -183,24 +193,13 @@ func printTrajectoriesToIndividualGraphsFile(exp *Experiment, name string) {
 		}
 	}()
 	trajects := exp.Trajectories
-	ctr := 0
 	for _, traject := range trajects {
-		// print header
+		// new graph per trajectory
 		fmt.Fprintf(file, "graph [\n directed 1\nmultigraph 1\n")
-		// print nodes
-		nodes := traject.Diagnoses
-		for _, node := range nodes {
-			fmt.Fprintf(file, "node [ id %d\nlabel \"%s\"\n]\n", ctr, exp.NameMap[node])
-			ctr++
-		}
-		// print edges
-		edges := traject.Diagnoses
-		labels := traject.PatientNumbers
-		nodeCtr := ctr - len(edges)
-		for i, j := 0, 0; i < len(edges)-1; i, j = i+1, j+1 {
-			fmt.Fprintf(file, fmt.Sprintf("edge [\nsource %d\ntarget %d\nlabel %d\n]\n", nodeCtr, nodeCtr+1, labels[j]))
-			nodeCtr++
-		}
+
+		printTrajectory(*traject, exp.NameMap, file)
+
+		// close graph
 		fmt.Fprintf(file, "]\n")
 	}
 }

@@ -62,7 +62,7 @@ type ExperimentParams struct {
 	NrOfThreads          int
 }
 
-// Run the experiment.
+// Run an experiment with the given parameters.
 func Run(args *ExperimentParams) (err error) {
 	defer func() {
 		// converts any panics into errors to avoid crashing the app
@@ -116,7 +116,7 @@ func Run(args *ExperimentParams) (err error) {
 	trajectory.PrintTrajectoriesToFile(exp, outputDir)
 	fmt.Println("Collected trajectories: ")
 	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
-		trajectory.PrintTrajectory(exp.Trajectories[i], exp)
+		trajectory.LogTrajectory(exp.Trajectories[i], exp)
 	}
 
 	// 5. Perform clustering

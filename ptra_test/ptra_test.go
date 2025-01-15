@@ -40,13 +40,13 @@ func TestInitializeIcd10NameMap(t *testing.T) {
 func TestInitializeICD10AnalysisMap(t *testing.T) {
 	file := "./icd10cm_tabular_2022.xml"
 	icd10Names := app.InitializeIcd10NameMap(file)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 0)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 1)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 2)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 3)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 4)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 5)
-	app.IntializeIcd10AnalysisMaps(icd10Names, 6)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 0)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 1)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 2)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 3)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 4)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 5)
+	app.InitializeIcd10AnalysisMaps(icd10Names, 6)
 }
 
 func TestParseTrinetXPatients(t *testing.T) {
@@ -265,7 +265,7 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	trajectories := trajectory.BuildTrajectories(exp, 5, 3, 2, 1, 5, 1.0, []trajectory.TrajectoryFilter{})
 	fmt.Println("Collected ", len(trajectories), " trajectories.")
 	for _, traj := range trajectories {
-		trajectory.PrintTrajectory(traj, exp)
+		trajectory.LogTrajectory(traj, exp)
 	}
 	//Output should be:
 	//Building patient trajectories...
