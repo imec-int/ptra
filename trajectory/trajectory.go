@@ -116,8 +116,8 @@ type Diagnosis struct {
 	Date     DiagnosisDate
 }
 
-// AddDiagnosis apptents a diagnosis to a patient's list of diagnoses.
-func AddDiagnosis(p *Patient, d *Diagnosis) {
+// AddDiagnosis appends a diagnosis to a patient's list of diagnoses.
+func (p Patient) AddDiagnosis(d *Diagnosis) {
 	p.Diagnoses = append(p.Diagnoses, d)
 }
 
