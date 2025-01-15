@@ -47,7 +47,7 @@ import (
 //TriNetX stores patient info as a csv file, as well as the diagnoses info.
 //For the medical name mapping, we can also use the ICD10 -> CCSR Mapping which maps ICD10 onto 530 categories with medical meaning. This
 //mapping can be downloaded from https://www.hcup-us.ahrq.gov/toolssoftware/ccsr/dxccsr.jsp#download as a CSV file. This
-//mapping performs a mapping ICD10 -> CCSR categpries -> medical name.
+//mapping performs a mapping ICD10 -> CCSR categories -> medical name.
 
 //Parsing ICD10 names hierarchy from xml
 //Structs for unmarshalling ICD10 xml data
@@ -525,7 +525,7 @@ func (analysisMap icd10AnalysisMapsFromXML) fillInPatientDiagnoses(patient *traj
 		return 1 // icd10 diagnosis excluded from analysis
 	}
 	diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: DID, Date: date}
-	trajectory.AddDiagnosis(patient, diagnosis)
+	patient.AddDiagnosis(diagnosis)
 	return 0
 }
 
@@ -536,7 +536,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInPatientDiagnoses(patient *tra
 	}
 	for _, DID := range DIDs {
 		diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: DID, Date: date}
-		trajectory.AddDiagnosis(patient, diagnosis)
+		patient.AddDiagnosis(diagnosis)
 	}
 	return 0
 }
@@ -547,17 +547,17 @@ func (analysisMap icd10AnalysisMapsFromXML) fillInNonICDPatientDiagnoses(patient
 		if info.RCDate != nil {
 			diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C98"], Date: *info.RCDate}
 			nonIcd = 1
-			trajectory.AddDiagnosis(patient, diagnosis)
+			patient.AddDiagnosis(diagnosis)
 		}
 		if info.MVACDate != nil {
 			nonIcd = 1
 			diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C99"], Date: *info.MVACDate}
-			trajectory.AddDiagnosis(patient, diagnosis)
+			patient.AddDiagnosis(diagnosis)
 		}
 		if info.IVTDate != nil {
 			nonIcd = 1
 			diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C100"], Date: *info.IVTDate}
-			trajectory.AddDiagnosis(patient, diagnosis)
+			patient.AddDiagnosis(diagnosis)
 		}
 	}
 	return nonIcd
@@ -571,7 +571,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 			for _, did := range dids {
 				diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: did, Date: *info.RCDate}
 				nonIcd = 1
-				trajectory.AddDiagnosis(patient, diagnosis)
+				patient.AddDiagnosis(diagnosis)
 			}
 		}
 		if info.MVACDate != nil {
@@ -579,7 +579,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 			for _, did := range dids {
 				diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: did, Date: *info.MVACDate}
 				nonIcd = 1
-				trajectory.AddDiagnosis(patient, diagnosis)
+				patient.AddDiagnosis(diagnosis)
 			}
 		}
 		if info.IVTDate != nil {
@@ -587,7 +587,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 			for _, did := range dids {
 				nonIcd = 1
 				diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: did, Date: *info.IVTDate}
-				trajectory.AddDiagnosis(patient, diagnosis)
+				patient.AddDiagnosis(diagnosis)
 			}
 		}
 	}
