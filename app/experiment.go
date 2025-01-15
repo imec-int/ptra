@@ -62,12 +62,12 @@ type ExperimentParams struct {
 	NrOfThreads          int
 }
 
-// Run an experiment with the given parameters.
+// Run a TriNetX experiment with the given parameters.
 func Run(args *ExperimentParams) (err error) {
 	defer func() {
 		// converts any panics into errors to avoid crashing the app
 		if r := recover(); r != nil {
-			fmt.Println("Recovered from panic in experiment.Run:", r)
+			fmt.Println("Recovered from panic during experiment: ", r)
 			err = errors.New(fmt.Sprintf("failed to run experiment: %v", r))
 		}
 	}()
@@ -83,7 +83,7 @@ func Run(args *ExperimentParams) (err error) {
 	}
 
 	// start execution
-	// 1. Parse inputs into experiment
+	// 1. Parse input into experiment
 	tinfo := map[string][]*TumorInfo{}
 	if args.TumorInfo != "" {
 		tinfo = ParsetTriNetXTumorData(args.TumorInfo) // need parsed patients to be able to parse tumor data file
@@ -94,29 +94,29 @@ func Run(args *ExperimentParams) (err error) {
 
 	// 2. Initialise relative risk ratios or load them from file from a previous run
 	if args.LoadRR != "" {
-		trajectory.LoadRRMatrix(exp, args.LoadRR)
-		trajectory.LoadDxDPatients(exp, patients, fmt.Sprintf("%s.patients.csv", args.LoadRR))
+		exp.LoadRRMatrix(args.LoadRR)
+		exp.LoadDxDPatients(patients, fmt.Sprintf("%s.patients.csv", args.LoadRR))
 	} else {
-		trajectory.InitializeExperimentRelativeRiskRatios(exp, args.MinYears, args.MaxYears, args.Iter)
+		exp.InitializeExperimentRelativeRiskRatios(args.MinYears, args.MaxYears, args.Iter)
 	}
-	if args.SaveRR != "" { //save RR matrix to file + DPatients
-		trajectory.SaveRRMatrix(exp, args.SaveRR)
-		trajectory.SaveDxDPatients(exp, fmt.Sprintf("%s.patients.csv", args.SaveRR))
+	if args.SaveRR != "" { // save RR matrix to file + DPatients
+		exp.SaveRRMatrix(args.SaveRR)
+		exp.SaveDxDPatients(fmt.Sprintf("%s.patients.csv", args.SaveRR))
 	}
 
 	// assist the gc and nil some exp data that is no longer needed after initializing RR
 	exp.Cohorts = nil
 	exp.DPatients = nil
 
-	//3. Build the trajectories
-	trajectory.BuildTrajectories(exp, args.MinPatients, args.MaxTrajectoryLength, args.MinTrajectoryLength, args.MinYears, args.MaxYears, args.RR,
+	// 3. Build the trajectories
+	exp.BuildTrajectories(args.MinPatients, args.MaxTrajectoryLength, args.MinTrajectoryLength, args.MinYears, args.MaxYears, args.RR,
 		GetTrajectoryFilters(args.TFilters, exp))
 
 	// 4. Plot trajectories to file
 	trajectory.PrintTrajectoriesToFile(exp, outputDir)
 	fmt.Println("Collected trajectories: ")
 	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
-		trajectory.LogTrajectory(exp.Trajectories[i], exp)
+		exp.LogTrajectory(i)
 	}
 
 	// 5. Perform clustering

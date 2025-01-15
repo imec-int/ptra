@@ -438,7 +438,7 @@ func patientsToIdMap(patients []*Patient) map[int]bool {
 // iterative algorithm that runs for a given number of iterations (iter). With iter = 400, the calculated p-values are
 // within 0.05 of the true p-values and with iter = 10000 they are within 0.01 of the true p-values.
 // The relative risk ratios are calculated in parallel for all possible diagnosis pairs.
-func InitializeExperimentRelativeRiskRatios(exp *Experiment, minTime, maxTime float64, iter int) {
+func (exp *Experiment) InitializeExperimentRelativeRiskRatios(minTime, maxTime float64, iter int) {
 	fmt.Println("Initializing relative risk ratios...")
 	fmt.Println("Sampling ", iter, " comparison groups for each diagnosis pair...")
 	// init random nr generator
@@ -517,7 +517,7 @@ func InitializeExperimentRelativeRiskRatios(exp *Experiment, minTime, maxTime fl
 
 // LoadRRMatrix loads an RR matrix from file and stores it in the given experiment. This file was created from a
 // previous run. This can be used instead of initializeRelativeRiskRatiosParallel
-func LoadRRMatrix(exp *Experiment, path string) {
+func (exp *Experiment) LoadRRMatrix(path string) {
 	//reverse the exp name map
 	nameMapReversed := map[string]int{}
 	for i, name := range exp.NameMap {
@@ -556,7 +556,7 @@ func LoadRRMatrix(exp *Experiment, path string) {
 // (exp), the patient map where to look up patient objects parsed from the input (pMap), and the file name (path). The
 // function side effects the experiment's DxDPatients slice. It uses the pMap to match concrete patient objects with IDs
 // stored in the file to be able to fill the patients for each pair of diagnoses.
-func LoadDxDPatients(exp *Experiment, pMap *PatientMap, path string) {
+func (exp *Experiment) LoadDxDPatients(pMap *PatientMap, path string) {
 	//reverse the exp name map
 	nameMapReversed := map[string]int{}
 	for i, name := range exp.NameMap {
@@ -600,7 +600,7 @@ func LoadDxDPatients(exp *Experiment, pMap *PatientMap, path string) {
 
 // SaveRRMatrix stores the RR matrix calculated for the given experiment. The diagnosis pairs from the matrix are
 // stored line per line as follows: medical name 1, medical name 2, RR.
-func SaveRRMatrix(exp *Experiment, path string) {
+func (exp *Experiment) SaveRRMatrix(path string) {
 	file, err := os.Create(path)
 	if err != nil {
 		panic(err)
@@ -618,8 +618,8 @@ func SaveRRMatrix(exp *Experiment, path string) {
 	}
 }
 
-// SaveDPatients saves per disease the PIDs that are diagnosed with this disease
-func SaveDxDPatients(exp *Experiment, path string) {
+// SaveDxDPatients saves per disease the PIDs that are diagnosed with this disease
+func (exp *Experiment) SaveDxDPatients(path string) {
 	file, err := os.Create(path)
 	if err != nil {
 		panic(err)
@@ -665,12 +665,12 @@ func MergeCohorts(cohorts []*Cohort) *Cohort {
 		}
 	}
 	fmt.Println("Merged cohort")
-	PrintCohort(cohort1, utils.MinInt(len(cohort1.DCtr), 22))
+	cohort1.Log(utils.MinInt(len(cohort1.DCtr), 22))
 	return cohort1
 }
 
-// PrintCohort prints a cohort to standard output.
-func PrintCohort(cohort *Cohort, max int) {
+// Log prints a cohort to standard output.
+func (cohort Cohort) Log(max int) {
 	fmt.Println("Cohort: ")
 	fmt.Println("Age group: ", cohort.AgeGroup, " Sex: ", cohort.Sex, " Region: ", cohort.Region, " Nr of patients: ", cohort.NofPatients, " "+
 		"Nr of diagnoses: ", cohort.NofDiagnoses)
@@ -688,7 +688,7 @@ type Pair struct {
 
 // selectDiagnosisPairs selects diagnosis pairs from which to calculate trajectories. These pairs are constrained by
 // requiring a minimum number of patients that is diagnosed with the disease pair, and a minimum RR score.
-func selectDiagnosisPairs(exp *Experiment, minPatients int, minRR float64) []*Pair {
+func (exp *Experiment) selectDiagnosisPairs(minPatients int, minRR float64) []*Pair {
 	fmt.Println("Selecting diagnosis pairs for building trajectories...")
 	pairs := []*Pair{}
 	nofDiagnosisCodes := len(exp.NameMap)
@@ -756,10 +756,10 @@ func extendTrajectory(currentT *Trajectory, d int, minTime, maxTime float64) map
 // minimum number of patients in the trajectory (minPatients), a maximum number of diagnoses in the trajectory (maxLength),
 // a minimum number of diagnoses in the trajectory (minLength), a minimum RR for each diagnosis transition (minRR), and
 // a list of filters.
-func BuildTrajectories(exp *Experiment, minPatients, maxLength, minLength int, minTime, maxTime, minRR float64,
+func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, minTime, maxTime, minRR float64,
 	filters []TrajectoryFilter) []*Trajectory {
 	fmt.Println("Building patient trajectories...")
-	pairs := selectDiagnosisPairs(exp, minPatients, minRR)
+	pairs := exp.selectDiagnosisPairs(minPatients, minRR)
 	exp.Pairs = pairs
 	var trajectories []*Trajectory
 	stack := []*Trajectory{}
