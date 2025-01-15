@@ -26,7 +26,6 @@ import (
 	"github.com/imec-int/ptra/trajectory"
 	"github.com/imec-int/ptra/utils"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -92,7 +91,7 @@ func parseIcd10HierarchyFromXml(file string) icd10Hierarchy {
 		panic(err)
 	}
 	defer xmlFile.Close()
-	xmlFileBytes, _ := ioutil.ReadAll(xmlFile)
+	xmlFileBytes, _ := io.ReadAll(xmlFile)
 	//unmarshall
 	icd10Hierarchy := icd10Hierarchy{}
 	xml.Unmarshal(xmlFileBytes, &icd10Hierarchy)
@@ -937,7 +936,7 @@ func parseIcd9ToIcd10Mapping(file string) map[string]string {
 	}
 	defer jsonFile.Close()
 	fmt.Println("Parsing ICD9 to ICD10 mapping from a json file.")
-	jsonBytes, _ := ioutil.ReadAll(jsonFile)
+	jsonBytes, _ := io.ReadAll(jsonFile)
 	var mapping map[string]string
 	json.Unmarshal(jsonBytes, &mapping)
 	return mapping
