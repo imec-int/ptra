@@ -137,6 +137,27 @@ func convertTrajectoriesToGraph(exp *Experiment) ([]int, [][][]int) {
 	return nodes, am
 }
 
+func printTrajectory(trajectory Trajectory, nameMap map[int]string, w io.Writer) {
+	TID := trajectory.ID
+	nodes := trajectory.Diagnoses
+	edges := trajectory.Diagnoses
+	labels := trajectory.PatientNumbers
+	ctr := 0
+
+	// print nodes
+	for _, node := range nodes {
+		fmt.Fprintf(w, "node [ \nid %d\nlabel \"%s\"\n]\n", ctr, nameMap[node])
+		ctr++
+	}
+
+	// print edges
+	nodeCtr := ctr - len(edges)
+	for i, j := 0, 0; i < len(edges)-1; i, j = i+1, j+1 {
+		fmt.Fprintf(w, fmt.Sprintf("edge [\ntid %d \nsource %d\ntarget %d\nlabel %d\n]\n", TID, nodeCtr, nodeCtr+1, labels[j]))
+		nodeCtr++
+	}
+}
+
 // printTrajectoriesToOneGraphFile plots all of an experiment's trajectories as a single graph to a GML file. The nodes
 // in the graph are the medical terms for the diagnoses that make up the trajectories. The edges are derived from the
 // transitions between diagnoses in the trajectories.
@@ -158,27 +179,6 @@ func printTrajectoriesToOneGraphFile(exp *Experiment, name string) {
 	}
 	// close graph
 	fmt.Fprintf(file, "]\n")
-}
-
-func printTrajectory(trajectory Trajectory, nameMap map[int]string, w io.Writer) {
-	TID := trajectory.ID
-	nodes := trajectory.Diagnoses
-	edges := trajectory.Diagnoses
-	labels := trajectory.PatientNumbers
-	ctr := 0
-
-	// print nodes
-	for _, node := range nodes {
-		fmt.Fprintf(w, "node [ \nid %d\nlabel \"%s\"\n]\n", ctr, nameMap[node])
-		ctr++
-	}
-
-	// print edges
-	nodeCtr := ctr - len(edges)
-	for i, j := 0, 0; i < len(edges)-1; i, j = i+1, j+1 {
-		fmt.Fprintf(w, fmt.Sprintf("edge [\ntid %d \nsource %d\ntarget %d\nlabel %d\n]\n", TID, nodeCtr, nodeCtr+1, labels[j]))
-		nodeCtr++
-	}
 }
 
 // printTrajectoriesToIndividualGraphsFile prints each trajectory as a separate subgraph to the same GML output file.
