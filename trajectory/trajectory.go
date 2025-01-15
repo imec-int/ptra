@@ -121,7 +121,7 @@ func AddDiagnosis(p *Patient, d *Diagnosis) {
 	p.Diagnoses = append(p.Diagnoses, d)
 }
 
-// sortDiagnosis modifies a given patient's list of diagnoses to be ordered by date.
+// SortDiagnoses modifies a given patient's list of diagnoses to be ordered by date.
 func SortDiagnoses(p *Patient) {
 	diagnoses := p.Diagnoses
 	sort.Slice(diagnoses, func(i, j int) bool {
@@ -158,9 +158,9 @@ func CompactDiagnoses(p *Patient) {
 
 // PatientMap contains all patient information parsed from the input.
 type PatientMap struct {
-	PIDStringMap map[string]int   //maps patient string id onto an int PID
-	Ctr          int              //total nr of patients parsed, also used for creating PIDs
-	PIDMap       map[int]*Patient //maps PID onto a patient object that contain YOB, sex, age group, etc
+	PIDStringMap map[string]int   // maps patient string id onto an int PID
+	Ctr          int              // total nr of patients parsed, also used for creating PIDs
+	PIDMap       map[int]*Patient // maps PID onto a patient object that contain YOB, sex, age group, etc
 	// optional info for logging
 	MaleCtr   int
 	FemaleCtr int
@@ -216,16 +216,16 @@ func MakeDxDPatients(size int) [][][]*Patient {
 // Experiment contains the inputs and outputs for calculating diagnosis trajectories for a specific patient population.
 type Experiment struct {
 	NofAgeGroups, NofRegions, Level, NofDiagnosisCodes int
-	DxDRR                                              [][]float64    //per disease pair, relative risk score (RR)
-	DxDPatients                                        [][][]*Patient //per disease pair, all patients diagnosed
-	DPatients                                          [][]*Patient   //per disease, all patients diagnosed
-	Cohorts                                            []*Cohort      //cohorts in the experiment
-	Name                                               string         //name of the experiment, for printing
+	DxDRR                                              [][]float64    // per disease pair, relative risk score (RR)
+	DxDPatients                                        [][][]*Patient // per disease pair, all patients diagnosed
+	DPatients                                          [][]*Patient   // per disease, all patients diagnosed
+	Cohorts                                            []*Cohort      // cohorts in the experiment
+	Name                                               string         // name of the experiment, for printing
 	NameMap                                            map[int]string // maps diagnosis ID to medical name
 	Trajectories                                       []*Trajectory  // a list of computed trajectories
 	Pairs                                              []*Pair        // a list of all selected pairs that are used to compute trajectories
 	IdMap                                              map[int]string // maps the analysis DID to the original diagnostic ID used in the input data
-	MCtr, FCtr                                         int            //counters for counting nr of males,females,patients
+	MCtr, FCtr                                         int            // counters for counting nr of males,females,patients
 }
 
 // selectCohort returns from a list of cohorts a cohort that matches a specific age group, sex, and region.
@@ -734,9 +734,9 @@ type Trajectory struct {
 	Diagnoses      []int            // A list of diagnosis codes that represent the trajectory
 	PatientNumbers []int            // A list with nr of patients for each transition in the trajectory
 	Patients       [][]*Patient     // A list of patients with the given trajectory
-	TrajMap        map[*Patient]int //Maps patient IDs onto a diagnosis index for trajectory tracking
+	TrajMap        map[*Patient]int // Maps patient IDs onto a diagnosis index for trajectory tracking
 	ID             int              // An analysis id
-	Cluster        int              //A cluster ID to which this trajectory is assigned to
+	Cluster        int              // A cluster ID to which this trajectory is assigned to
 }
 
 // extendTrajectory tries to extend a given trajectory (currentT) with a diagnosis (d). It returns a map which maps all
@@ -754,7 +754,7 @@ func extendTrajectory(currentT *Trajectory, d int, minTime, maxTime float64) map
 
 // BuildTrajectories calculates the trajectories for an experiment. The trajectories are constrained by: a
 // minimum number of patients in the trajectory (minPatients), a maximum number of diagnoses in the trajectory (maxLength),
-// a minumum number of diagnoses in the trajectory (minLength), a minimum RR for each diagnosis transition (minRR), and
+// a minimum number of diagnoses in the trajectory (minLength), a minimum RR for each diagnosis transition (minRR), and
 // a list of filters.
 func BuildTrajectories(exp *Experiment, minPatients, maxLength, minLength int, minTime, maxTime, minRR float64,
 	filters []TrajectoryFilter) []*Trajectory {

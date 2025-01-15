@@ -185,7 +185,7 @@ func printIcd10NameMap(table map[string]icd10Name) {
 
 // initializeIcd10NameMap initializes a name map for ICD10 DID -> medical name, level, and categories it belongs to.
 func initializeIcd10NameMap(file string) map[string]icd10Name {
-	icd10NameMap := map[string]icd10Name{} //maps ICD10 DID to a medical name, level, and categories to which it belongs.
+	icd10NameMap := map[string]icd10Name{} // maps ICD10 DID to a medical name, level, and categories to which it belongs.
 	icd10Hierarchy := parseIcd10HierarchyFromXml(file)
 	for _, chap := range icd10Hierarchy.Chapters {
 		category0 := chap.Desc
@@ -284,9 +284,9 @@ func getNonICD10CodesToAddToAnalysis() map[string]string {
 
 // initializeIcd10AnalysisIDMap creates a map ICD10 DID -> analysis DID and a map analysis ID -> medical name. This is
 // useful to remap diagnosis codes used in the input to a higher level in the ICD10 hierarchy. E.g "typhoid fever" and
-// "cholera" are both "infectuous intestinal diseases", so they could both be identified as such during the analysis.
+// "cholera" are both "infectious intestinal diseases", so they could both be identified as such during the analysis.
 // This can be interesting to obtain more global patient trajectories/clusters.
-func intializeIcd10AnalysisMaps(icd10NameMap map[string]icd10Name, level int) (map[string]int, map[int]string, int) {
+func initializeIcd10AnalysisMaps(icd10NameMap map[string]icd10Name, level int) (map[string]int, map[int]string, int) {
 	analysisIdMap := map[string]int{}                     // maps icd 10 code to analysis ID
 	analysisNameMap := map[int]string{}                   // maps analysis ID to a medical name
 	nameToAnalysisIdMap := map[string]int{}               // maps medical name to analysis ID
@@ -298,7 +298,7 @@ func intializeIcd10AnalysisMaps(icd10NameMap map[string]icd10Name, level int) (m
 			continue
 		}
 		var name string
-		if level == icd10Name.level || level > icd10Name.level {
+		if level >= icd10Name.level {
 			name = icd10Name.name
 		} else {
 			name = icd10Name.categories[level]
@@ -598,7 +598,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 // medical name for an ICD10 Hierarchy passed as xml file and a requested hierarchy level.
 func initializeIcd10AnalysisMapsFromXML(file string, level int) icd10AnalysisMapsFromXML {
 	icd10NameMapFromXml := initializeIcd10NameMap(file) // map ICD10 DID -> ICD 10 Name (medical desc, categories, level)
-	analysisIdMap, analysisNameMap, ctr := intializeIcd10AnalysisMaps(icd10NameMapFromXml, level)
+	analysisIdMap, analysisNameMap, ctr := initializeIcd10AnalysisMaps(icd10NameMapFromXml, level)
 	return icd10AnalysisMapsFromXML{DIDMap: analysisIdMap, NameMap: analysisNameMap, NofDiagnosisCodes: ctr}
 }
 

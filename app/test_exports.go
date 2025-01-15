@@ -20,7 +20,7 @@ package app
 
 var ParseIcd9ToIcd10Mapping = parseIcd9ToIcd10Mapping
 var ParseTriNetXPatientData = parseTriNetXPatientData
-var IntializeIcd10AnalysisMaps = intializeIcd10AnalysisMaps
+var InitializeIcd10AnalysisMaps = initializeIcd10AnalysisMaps
 var InitializeIcd10NameMap = initializeIcd10NameMap
 var InitializeIcd10AnalysisMapsFromXML = initializeIcd10AnalysisMapsFromXML
 var ParseTrinetXPatientDiagnoses = parseTrinetXPatientDiagnoses
