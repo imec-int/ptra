@@ -40,3 +40,10 @@ func MemberInt(x int, y []int) bool {
 	}
 	return false
 }
+
+func BoolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
