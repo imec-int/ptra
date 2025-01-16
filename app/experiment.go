@@ -116,7 +116,7 @@ func Run(args *ExperimentParams) (err error) {
 	trajectory.PrintTrajectoriesToFile(exp, outputDir)
 	fmt.Println("Collected trajectories: ")
 	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
-		exp.LogTrajectory(i)
+		trajectory.LogTrajectory(exp.Trajectories[i], exp)
 	}
 
 	// 5. Perform clustering

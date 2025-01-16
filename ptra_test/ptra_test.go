@@ -68,7 +68,7 @@ func TestInitializeCohorts(t *testing.T) {
 	nofRegions := 1
 	cohorts := trajectory.InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
 	for _, cohort := range cohorts {
-		trajectory.PrintCohort(cohort, 18)
+		cohort.Log(18)
 	}
 	fmt.Println("Map DID -> Medical Name")
 	collected := make([][]string, len(analysisMaps.NameMap))
@@ -237,10 +237,10 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	cohorts := trajectory.InitializeCohorts(PMap, 2, 1, 4)
 	fmt.Println("Printing cohorts")
 	for _, cohort := range cohorts {
-		trajectory.PrintCohort(cohort, 4)
+		cohort.Log(4)
 	}
 	cohort := trajectory.MergeCohorts(cohorts)
-	trajectory.PrintCohort(cohort, 4)
+	cohort.Log(4)
 	//Test building trajectories
 	nameMap := map[int]string{0: "Smoking", 1: "Lung cancer", 2: "Drinking", 3: "Liver cancer"}
 	exp := &trajectory.Experiment{
@@ -256,13 +256,13 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		Trajectories:      nil,
 	}
 	//initializeExperimentRelativeRiskRatios(exp, 0.5, 5.0)
-	trajectory.InitializeExperimentRelativeRiskRatios(exp, 0.5, 5.0, 10)
+	exp.InitializeExperimentRelativeRiskRatios(0.5, 5.0, 10)
 	fmt.Println("Relative risk ratios: [")
 	for _, rr := range exp.DxDRR {
 		fmt.Print(rr, ", ")
 	}
 	fmt.Println("...]")
-	trajectories := trajectory.BuildTrajectories(exp, 5, 3, 2, 1, 5, 1.0, []trajectory.TrajectoryFilter{})
+	trajectories := exp.BuildTrajectories(5, 3, 2, 1, 5, 1.0, []trajectory.TrajectoryFilter{})
 	fmt.Println("Collected ", len(trajectories), " trajectories.")
 	for _, traj := range trajectories {
 		trajectory.LogTrajectory(traj, exp)

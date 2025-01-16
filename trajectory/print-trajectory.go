@@ -30,8 +30,7 @@ import (
 // Plotting of trajectories
 
 // LogTrajectory prints a trajectory to standard output.
-func (exp *Experiment) LogTrajectory(tid int) {
-	t := exp.Trajectories[tid]
+func LogTrajectory(t *Trajectory, exp *Experiment) {
 	j := 0
 	for i, d := range t.Diagnoses {
 		dName := exp.NameMap[d]
