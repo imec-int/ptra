@@ -147,14 +147,16 @@ func printTrajectory(trajectory Trajectory, nameMap map[int]string, w io.Writer)
 
 	// print nodes
 	for _, node := range nodes {
-		fmt.Fprintf(w, "node [ \nid %d\nlabel \"%s\"\n]\n", ctr, nameMap[node])
+		fmt.Fprintf(w, "node [ \n\tid %d\n\tlabel \"%s\"\n]\n", ctr, nameMap[node])
 		ctr++
 	}
 
 	// print edges
 	nodeCtr := ctr - len(edges)
 	for i, j := 0, 0; i < len(edges)-1; i, j = i+1, j+1 {
-		fmt.Fprintf(w, fmt.Sprintf("edge [\ntid %d \nsource %d\ntarget %d\nlabel %d\n]\n", TID, nodeCtr, nodeCtr+1, labels[j]))
+		isStart := utils.BoolToInt(i == 0)
+		isEnd := utils.BoolToInt(i == len(edges)-2)
+		fmt.Fprintf(w, fmt.Sprintf("edge [\n\ttid %d\n\ttstart %d\n\ttend %d\n\tsource %d\n\ttarget %d\n\tlabel %d\n]", TID, isStart, isEnd, nodeCtr, nodeCtr+1, labels[j]))
 		nodeCtr++
 	}
 }
@@ -173,7 +175,7 @@ func printTrajectoriesToOneGraphFile(exp *Experiment, name string) {
 		}
 	}()
 	// open graph
-	fmt.Fprintf(file, "graph [\n directed 1\nmultigraph 1\n")
+	fmt.Fprintf(file, "graph [\n\t directed 1\nmultigraph 1\n")
 	trajects := exp.Trajectories
 	for _, traject := range trajects {
 		printTrajectory(*traject, exp.NameMap, file)
@@ -196,7 +198,7 @@ func printTrajectoriesToIndividualGraphsFile(exp *Experiment, name string) {
 	trajects := exp.Trajectories
 	for _, traject := range trajects {
 		// new graph per trajectory
-		fmt.Fprintf(file, "graph [\n directed 1\nmultigraph 1\n")
+		fmt.Fprintf(file, "graph [\n\t directed 1\nmultigraph 1\n")
 
 		printTrajectory(*traject, exp.NameMap, file)
 
