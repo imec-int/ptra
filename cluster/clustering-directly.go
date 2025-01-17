@@ -85,10 +85,8 @@ func convertTrajectoriesToAbcFormat(exp *trajectory.Experiment, name string) {
 	}()
 	// compute the jacard index for the trajectories
 	for i, t1 := range exp.Trajectories {
-		t1.ID = i
 		for j := i + 1; j < len(exp.Trajectories); j++ {
 			t2 := exp.Trajectories[j]
-			t2.ID = j
 			coeff := jaccardTrajectory(t1, t2)
 			fmt.Fprintf(file, "%d\t%d\t%f\n", i, j, coeff)
 		}
@@ -225,7 +223,7 @@ func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, o
 		for _, t := range collected {
 			for _, node := range t.Diagnoses {
 				if _, ok := nodePrinted[node]; !ok {
-					fmt.Fprintf(ofile, fmt.Sprintf("node [\n\tid %d\n\tlabel\"%s\"\n]\n", node, exp.NameMap[node]))
+					fmt.Fprintf(ofile, fmt.Sprintf("node [\n\tid %d\n\tlabel\"%s\"\n\t]\n", node, exp.NameMap[node]))
 					nodePrinted[node] = true
 				}
 			}
@@ -242,9 +240,9 @@ func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, o
 				n := t.PatientNumbers[i-1]
 				printed := edgePrinted[d1][d2]
 				if !utils.MemberInt(n, printed) {
-					tstart := utils.BoolToInt(i == 1)
+					tfirst := utils.BoolToInt(i == 1)
 					tend := utils.BoolToInt(i == len(t.Diagnoses)-1)
-					fmt.Fprintf(ofile, fmt.Sprintf("edge [\n\ttid %d\n\ttstart %d\n\ttend %d\n\tsource %d\n\ttarget %d\n\tlabel %d\n]\n", t.ID, tstart, tend, d1, d2, n))
+					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttest 2\n\t\ttid %d\n\t\ttfirst %d\n\t\ttlast %d\n\t\tsource %d\n\t\ttarget %d\n\t\tlabel %d\n\t]\n", t.ID, tfirst, tend, d1, d2, n))
 					if printed == nil {
 						edgePrinted[d1][d2] = []int{n}
 					} else {
@@ -370,7 +368,7 @@ func convertToDirectTrajectoryClusterGraphsRR(exp *trajectory.Experiment, input,
 		for _, t := range collected {
 			for _, node := range t.Diagnoses {
 				if _, ok := nodePrinted[node]; !ok {
-					fmt.Fprintf(ofile, fmt.Sprintf("node [\n\tid %d\n\tlabel\"%s\"\n]\n", node, exp.NameMap[node]))
+					fmt.Fprintf(ofile, fmt.Sprintf("\tnode [\n\t\tid %d\n\t\tlabel\"%s\"\n\t]\n", node, exp.NameMap[node]))
 					nodePrinted[node] = true
 				}
 			}
@@ -388,9 +386,9 @@ func convertToDirectTrajectoryClusterGraphsRR(exp *trajectory.Experiment, input,
 				if !edgePrinted[d1][d2] {
 					edgePrinted[d1][d2] = true
 					RR := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
-					tstart := utils.BoolToInt(i == 1)
+					tfirst := utils.BoolToInt(i == 1)
 					tend := utils.BoolToInt(i == len(t.Diagnoses)-1)
-					fmt.Fprintf(ofile, fmt.Sprintf("edge [\n\ttid %d\n\ttstart %d\n\ttend %d\n\tsource %d\n\ttarget %d\n\tlabel %d\n]\n", t.ID, tstart, tend, d1, d2, RR))
+					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttest 3\n\t\ttid %d\n\t\ttfirst %d\n\t\ttlast %d\n\t\tsource %d\n\t\ttarget %d\n\t\tlabel %d\n\t]\n", t.ID, tfirst, tend, d1, d2, RR))
 					//rr, mfratio, eoi := transitionInformation(exp, t, tctr, d1, d2)
 					//fmt.Fprintf(ofile, fmt.Sprintf("edge [\nsource %d\ntarget %d\nlabel \"RR:%s,M/F:%s,EOI:%s\"\n]\n", d1, d2, rr, mfratio, eoi))
 				}

@@ -762,12 +762,14 @@ func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, 
 	pairs := exp.selectDiagnosisPairs(minPatients, minRR)
 	exp.Pairs = pairs
 	var trajectories []*Trajectory
-	stack := []*Trajectory{}
+	var stack []*Trajectory
 	for _, pair := range pairs {
-		t := &Trajectory{Diagnoses: []int{pair.First, pair.Second},
+		t := &Trajectory{
+			Diagnoses:      []int{pair.First, pair.Second},
 			PatientNumbers: []int{len(exp.DxDPatients[pair.First][pair.Second])},
 			Patients:       [][]*Patient{exp.DxDPatients[pair.First][pair.Second]},
-			TrajMap:        map[*Patient]int{}}
+			TrajMap:        map[*Patient]int{},
+		}
 		for _, p := range exp.DxDPatients[pair.First][pair.Second] {
 			_, idx := countPatientDiagnosisPair(p, pair.First, pair.Second, minTime, maxTime)
 			t.TrajMap[p] = idx
@@ -777,7 +779,7 @@ func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, 
 	// divide the work
 	result := parallel.RangeReduce(0, len(stack), 0, func(low, high int) interface{} {
 		lstack := stack[low:high]
-		ltrajectories := []*Trajectory{}
+		var ltrajectories []*Trajectory
 		tCtr := 0
 		for {
 			if len(lstack) == 0 {
@@ -800,7 +802,7 @@ func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, 
 						copy(patientNumbers, currentT.PatientNumbers)
 						ps := make([][]*Patient, len(currentT.Patients))
 						copy(ps, currentT.Patients)
-						patients := []*Patient{}
+						var patients []*Patient
 						for p, _ := range extendedTrajMap {
 							patients = append(patients, p)
 						}
@@ -837,8 +839,8 @@ func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, 
 	})
 	trajectories = result.([]*Trajectory)
 	fmt.Println("Found ", len(trajectories), " trajectories.")
-	filteredTrajectories := []*Trajectory{}
-	for _, traj := range trajectories {
+	var filteredTrajectories []*Trajectory
+	for idx, traj := range trajectories {
 		keep := true
 		for _, filter := range filters {
 			if !filter(traj) {
@@ -847,6 +849,7 @@ func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, 
 			}
 		}
 		if keep {
+			traj.ID = idx
 			filteredTrajectories = append(filteredTrajectories, traj)
 		}
 	}
