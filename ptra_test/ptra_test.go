@@ -267,6 +267,7 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	for _, traj := range trajectories {
 		trajectory.LogTrajectory(traj, exp)
 	}
+	exp.PrintTrajectoriesToFile("./output")
 	//Output should be:
 	//Building patient trajectories...
 	//Selecting diagnosis pairs for building trajectories...

@@ -113,7 +113,7 @@ func Run(args *ExperimentParams) (err error) {
 		GetTrajectoryFilters(args.TFilters, exp))
 
 	// 4. Plot trajectories to file
-	trajectory.PrintTrajectoriesToFile(exp, outputDir)
+	exp.PrintTrajectoriesToFile(outputDir)
 	fmt.Println("Collected trajectories: ")
 	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
 		trajectory.LogTrajectory(exp.Trajectories[i], exp)
