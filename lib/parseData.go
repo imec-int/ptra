@@ -16,15 +16,14 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package app
+package lib
 
 import (
 	"encoding/csv"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"github.com/imec-int/ptra/trajectory"
-	"github.com/imec-int/ptra/utils"
+	"github.com/imec-int/ptra/lib/utils"
 	"io"
 	"math"
 	"os"
@@ -512,63 +511,63 @@ func (analysisMap icd10AnalysisMapsFromCCSR) getIdMap() map[int]string {
 // diagnostic event. fillInPatientDiagnoses creates for a given diagnosis identifier from the input a Diagnosis object
 // and adds it to a patient's list of diagnoses.
 type AnalysisMaps interface {
-	fillInPatientDiagnoses(patient *trajectory.Patient, DidString string, date trajectory.DiagnosisDate) int
-	fillInNonICDPatientDiagnoses(patient *trajectory.Patient, infoMap map[string]*TreatmentInfo) int
+	fillInPatientDiagnoses(patient *Patient, DidString string, date DiagnosisDate) int
+	fillInNonICDPatientDiagnoses(patient *Patient, infoMap map[string]*TreatmentInfo) int
 	GetICDCode(did int) string
 	getIdMap() map[int]string
 }
 
-func (analysisMap icd10AnalysisMapsFromXML) fillInPatientDiagnoses(patient *trajectory.Patient, DIDString string, date trajectory.DiagnosisDate) int {
+func (analysisMap icd10AnalysisMapsFromXML) fillInPatientDiagnoses(patient *Patient, DIDString string, date DiagnosisDate) int {
 	DID := analysisMap.getDID(DIDString)
 	if DID == -1 {
 		return 1 // icd10 diagnosis excluded from analysis
 	}
-	diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: DID, Date: date}
+	diagnosis := &Diagnosis{PID: patient.PID, DID: DID, Date: date}
 	patient.AddDiagnosis(diagnosis)
 	return 0
 }
 
-func (analysisMap icd10AnalysisMapsFromCCSR) fillInPatientDiagnoses(patient *trajectory.Patient, DIDString string, date trajectory.DiagnosisDate) int {
+func (analysisMap icd10AnalysisMapsFromCCSR) fillInPatientDiagnoses(patient *Patient, DIDString string, date DiagnosisDate) int {
 	DIDs := analysisMap.getDID(DIDString)
 	if DIDs == nil {
 		return 1 // icd10 code excluded from analysis
 	}
 	for _, DID := range DIDs {
-		diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: DID, Date: date}
+		diagnosis := &Diagnosis{PID: patient.PID, DID: DID, Date: date}
 		patient.AddDiagnosis(diagnosis)
 	}
 	return 0
 }
 
-func (analysisMap icd10AnalysisMapsFromXML) fillInNonICDPatientDiagnoses(patient *trajectory.Patient, infoMap map[string]*TreatmentInfo) int {
+func (analysisMap icd10AnalysisMapsFromXML) fillInNonICDPatientDiagnoses(patient *Patient, infoMap map[string]*TreatmentInfo) int {
 	nonIcd := 0
 	if info, ok := infoMap[patient.PIDString]; ok {
 		if info.RCDate != nil {
-			diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C98"], Date: *info.RCDate}
+			diagnosis := &Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C98"], Date: *info.RCDate}
 			nonIcd = 1
 			patient.AddDiagnosis(diagnosis)
 		}
 		if info.MVACDate != nil {
 			nonIcd = 1
-			diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C99"], Date: *info.MVACDate}
+			diagnosis := &Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C99"], Date: *info.MVACDate}
 			patient.AddDiagnosis(diagnosis)
 		}
 		if info.IVTDate != nil {
 			nonIcd = 1
-			diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C100"], Date: *info.IVTDate}
+			diagnosis := &Diagnosis{PID: patient.PID, DID: analysisMap.DIDMap["C100"], Date: *info.IVTDate}
 			patient.AddDiagnosis(diagnosis)
 		}
 	}
 	return nonIcd
 }
 
-func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patient *trajectory.Patient, infoMap map[string]*TreatmentInfo) int {
+func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patient *Patient, infoMap map[string]*TreatmentInfo) int {
 	nonIcd := 0
 	if info, ok := infoMap[patient.PIDString]; ok {
 		if info.RCDate != nil {
 			dids := analysisMap.DIDMap["C98"]
 			for _, did := range dids {
-				diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: did, Date: *info.RCDate}
+				diagnosis := &Diagnosis{PID: patient.PID, DID: did, Date: *info.RCDate}
 				nonIcd = 1
 				patient.AddDiagnosis(diagnosis)
 			}
@@ -576,7 +575,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 		if info.MVACDate != nil {
 			dids := analysisMap.DIDMap["C99"]
 			for _, did := range dids {
-				diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: did, Date: *info.MVACDate}
+				diagnosis := &Diagnosis{PID: patient.PID, DID: did, Date: *info.MVACDate}
 				nonIcd = 1
 				patient.AddDiagnosis(diagnosis)
 			}
@@ -585,7 +584,7 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 			dids := analysisMap.DIDMap["C100"]
 			for _, did := range dids {
 				nonIcd = 1
-				diagnosis := &trajectory.Diagnosis{PID: patient.PID, DID: did, Date: *info.IVTDate}
+				diagnosis := &Diagnosis{PID: patient.PID, DID: did, Date: *info.IVTDate}
 				patient.AddDiagnosis(diagnosis)
 			}
 		}
@@ -614,7 +613,7 @@ func initializeIcd10AnalysisMapsFromCCSR(file string) icd10AnalysisMapsFromCCSR 
 // parseTriNetXPatientData parses a file with patient information from the TriNetX database. Input: a patient file in csv
 // format, a desired number of age groups to initialize cohorts. Diagnoses of the patient need to be filled in after
 // parsing the diagnoses file.
-func parseTriNetXPatientData(file string, nofCohortAges int) (*trajectory.PatientMap, int) {
+func parseTriNetXPatientData(file string, nofCohortAges int) (*PatientMap, int) {
 	//open file
 	csvFile, err := os.Open(file)
 	if err != nil {
@@ -625,7 +624,7 @@ func parseTriNetXPatientData(file string, nofCohortAges int) (*trajectory.Patien
 			panic(err)
 		}
 	}()
-	patientMap := &trajectory.PatientMap{PIDMap: map[int]*trajectory.Patient{}, PIDStringMap: map[string]int{}}
+	patientMap := &PatientMap{PIDMap: map[int]*Patient{}, PIDStringMap: map[string]int{}}
 	maxYOB := 1850
 	minYOB := 2021
 	deathCr := 0
@@ -653,22 +652,22 @@ func parseTriNetXPatientData(file string, nofCohortAges int) (*trajectory.Patien
 		pid := patientMap.Ctr //analysis ID
 		var sex int
 		if record[1] == "M" {
-			sex = trajectory.Male
+			sex = Male
 			patientMap.MaleCtr++
 		}
 		if record[1] == "F" {
-			sex = trajectory.Female
+			sex = Female
 			patientMap.FemaleCtr++
 		}
 		dateOfDeathString := record[10]
-		var dateOfDeath *trajectory.DiagnosisDate
+		var dateOfDeath *DiagnosisDate
 		if len(dateOfDeathString) == 6 {
 			year, err := strconv.Atoi(dateOfDeathString[0:4])
 			if err == nil {
 				month, err := strconv.Atoi(dateOfDeathString[4:6])
 				if err == nil {
 					deathCr++
-					dateOfDeath = &trajectory.DiagnosisDate{
+					dateOfDeath = &DiagnosisDate{
 						Year:  year,
 						Month: month,
 						Day:   1, //unknown, default to 1
@@ -683,13 +682,13 @@ func parseTriNetXPatientData(file string, nofCohortAges int) (*trajectory.Patien
 		} else {
 			regions[region]++
 		}
-		patient := trajectory.Patient{
+		patient := Patient{
 			PID:       pid,
 			PIDString: pidString,
 			YOB:       yob,
 			CohortAge: 0,
 			Sex:       sex,
-			Diagnoses: []*trajectory.Diagnosis{},
+			Diagnoses: []*Diagnosis{},
 			DeathDate: dateOfDeath,
 			Region:    regionIds[region],
 		}
@@ -723,7 +722,7 @@ func parseTriNetXPatientData(file string, nofCohortAges int) (*trajectory.Patien
 //Parsing patient diagnoses
 
 // parseTriNetXDiagnosisDate turns a TriNetX date string into DiagnosisDate object.
-func parseTriNetXDiagnosisDate(date string) trajectory.DiagnosisDate {
+func parseTriNetXDiagnosisDate(date string) DiagnosisDate {
 	year, err := strconv.Atoi(date[0:4])
 	if err != nil {
 		panic(err)
@@ -736,7 +735,7 @@ func parseTriNetXDiagnosisDate(date string) trajectory.DiagnosisDate {
 	if err != nil {
 		panic(err)
 	}
-	return trajectory.DiagnosisDate{Year: year, Month: month, Day: day}
+	return DiagnosisDate{Year: year, Month: month, Day: day}
 }
 
 // TriNetXEventOfInterest checks if the ICD10 code is related to bladder cancer
@@ -752,9 +751,9 @@ func TriNetXEventOfInterest(icd10ID string) bool {
 
 // TreatmentInfo implements a structure for storing the dates of certain bladder cancer treatments.
 type TreatmentInfo struct {
-	RCDate   *trajectory.DiagnosisDate //Date of radical cystectomy
-	MVACDate *trajectory.DiagnosisDate //Date of MVAC chemotherapy
-	IVTDate  *trajectory.DiagnosisDate //Date of intravesical therapy
+	RCDate   *DiagnosisDate //Date of radical cystectomy
+	MVACDate *DiagnosisDate //Date of MVAC chemotherapy
+	IVTDate  *DiagnosisDate //Date of intravesical therapy
 }
 
 // parseTriNetXTreatmentFile parses a csv file that contains information of patient's treatments at different time stamps.
@@ -780,7 +779,7 @@ func parseTriNetXTreatmentFile(fileName string) map[string]*TreatmentInfo {
 			panic(err)
 		}
 		PIDString := record[0]
-		var rcDate, mvacDate, ivtDate *trajectory.DiagnosisDate
+		var rcDate, mvacDate, ivtDate *DiagnosisDate
 		if len(record[10]) == 10 { // valid date
 			d := parseTriNetXDiagnosisDate(record[10])
 			rcDate = &d
@@ -801,7 +800,7 @@ func parseTriNetXTreatmentFile(fileName string) map[string]*TreatmentInfo {
 // parseTrinetXPatientDiagnoses parses a csv file containing patient diagnoses. It fills in those diagnoses for the given
 // patients. It uses the icd10AnalysisMap to assign internal analysis DID to the diagnoses.
 // TO DO: Handle ICD09 diagnoses.
-func parseTrinetXPatientDiagnoses(diagnosesFile, treatmentInfoFile string, patients *trajectory.PatientMap, icd10AnalysisMap AnalysisMaps, icd9ToIcd10Map map[string]string) {
+func parseTrinetXPatientDiagnoses(diagnosesFile, treatmentInfoFile string, patients *PatientMap, icd10AnalysisMap AnalysisMaps, icd9ToIcd10Map map[string]string) {
 	file, err := os.Open(diagnosesFile)
 	if err != nil {
 		panic(err)
@@ -826,7 +825,7 @@ func parseTrinetXPatientDiagnoses(diagnosesFile, treatmentInfoFile string, patie
 		}
 		ctr++
 		PIDString := record[0]
-		patient, ok := trajectory.GetPatient(PIDString, patients)
+		patient, ok := GetPatient(PIDString, patients)
 		if !ok {
 			continue //skip unknown patients
 		}
@@ -863,8 +862,8 @@ func parseTrinetXPatientDiagnoses(diagnosesFile, treatmentInfoFile string, patie
 		}
 	}
 	for _, patient := range patients.PIDMap {
-		trajectory.SortDiagnoses(patient)
-		trajectory.CompactDiagnoses(patient)
+		SortDiagnoses(patient)
+		CompactDiagnoses(patient)
 	}
 	fmt.Println("Parsed diagnosis data.")
 	fmt.Print("Parsed ", ctr, " diagnoses ")
@@ -874,7 +873,7 @@ func parseTrinetXPatientDiagnoses(diagnosesFile, treatmentInfoFile string, patie
 }
 
 func ParseTriNetXData(name, patientFile, diagnosisFile, diagnosisInfoFile, treatmentInfoFile string, nofCohortAges,
-	level int, minYears, maxYears float64, icd9ToIcd10File string, filters []trajectory.PatientFilter) (*trajectory.Experiment, *trajectory.PatientMap) {
+	level int, minYears, maxYears float64, icd9ToIcd10File string, filters []PatientFilter) (*Experiment, *PatientMap) {
 	// parse data
 	// fill in patients
 	patients, nofRegions := parseTriNetXPatientData(patientFile, nofCohortAges)
@@ -904,17 +903,17 @@ func ParseTriNetXData(name, patientFile, diagnosisFile, diagnosisInfoFile, treat
 	// fill in diagnoses for patients
 	parseTrinetXPatientDiagnoses(diagnosisFile, treatmentInfoFile, patients, analysisMaps, icd9ToIcd10Map)
 	// Apply patient filter
-	patients = trajectory.ApplyPatientFilters(filters, patients)
+	patients = ApplyPatientFilters(filters, patients)
 	fmt.Println("Filtered down to: ", len(patients.PIDMap), " patients.")
 	// create cohorts
-	cohorts := trajectory.InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
-	mergedCohort := trajectory.MergeCohorts(cohorts)
-	exp := trajectory.Experiment{
+	cohorts := InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
+	mergedCohort := MergeCohorts(cohorts)
+	exp := Experiment{
 		NofAgeGroups:      nofCohortAges,
 		Level:             level,
 		NofDiagnosisCodes: nofDiagnosisCodes,
-		DxDRR:             trajectory.MakeDxDRR(nofDiagnosisCodes),
-		DxDPatients:       trajectory.MakeDxDPatients(nofDiagnosisCodes),
+		DxDRR:             MakeDxDRR(nofDiagnosisCodes),
+		DxDPatients:       MakeDxDPatients(nofDiagnosisCodes),
 		DPatients:         mergedCohort.DPatients,
 		Cohorts:           cohorts,
 		Name:              name,
@@ -946,7 +945,7 @@ func parseIcd9ToIcd10Mapping(file string) map[string]string {
 // metastasis
 type TumorInfo struct {
 	TStage, NStage, MStage, Stage string
-	Date                          trajectory.DiagnosisDate
+	Date                          DiagnosisDate
 }
 
 // getTumorStage converts tumor size, number of lymph nodes, and metastatis level into an overall cancer stage.

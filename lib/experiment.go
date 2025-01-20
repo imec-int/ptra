@@ -16,20 +16,17 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package app
+package lib
 
 import (
 	"errors"
-	"github.com/imec-int/ptra/cluster"
-	"github.com/imec-int/ptra/trajectory"
-	"github.com/imec-int/ptra/utils"
+	"fmt"
+	"github.com/imec-int/ptra/lib/utils"
+	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
-
-	"fmt"
-	"os"
-	"runtime"
 )
 
 type ExperimentParams struct {
@@ -116,7 +113,7 @@ func Run(args *ExperimentParams) (err error) {
 	exp.PrintTrajectoriesToFile(outputDir)
 	fmt.Println("Collected trajectories: ")
 	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
-		trajectory.LogTrajectory(exp.Trajectories[i], exp)
+		LogTrajectory(exp.Trajectories[i], exp)
 	}
 
 	// 5. Perform clustering
@@ -126,7 +123,7 @@ func Run(args *ExperimentParams) (err error) {
 			gi, _ := strconv.ParseInt(g, 10, 0)
 			clusterGranularityList = append(clusterGranularityList, int(gi))
 		}
-		clusteringErr := cluster.ClusterTrajectoriesDirectly(exp, clusterGranularityList, outputDir)
+		clusteringErr := ClusterTrajectories(exp, clusterGranularityList, outputDir)
 		if clusteringErr != nil {
 			return clusteringErr
 		}

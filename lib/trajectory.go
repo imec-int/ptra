@@ -16,13 +16,13 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package trajectory
+package lib
 
 import (
 	"encoding/csv"
 	"fmt"
 	"github.com/exascience/pargo/parallel"
-	"github.com/imec-int/ptra/utils"
+	"github.com/imec-int/ptra/lib/utils"
 	"github.com/valyala/fastrand"
 	"io"
 	"math"
@@ -31,6 +31,16 @@ import (
 	"strconv"
 	"strings"
 )
+
+// Trajectory holds all data relevant to a disease trajectory.
+type Trajectory struct {
+	Diagnoses      []int            // A list of diagnosis codes that represent the trajectory
+	PatientNumbers []int            // A list with nr of patients for each transition in the trajectory
+	Patients       [][]*Patient     // A list of patients with the given trajectory
+	TrajMap        map[*Patient]int // Maps patient IDs onto a diagnosis index for trajectory tracking
+	ID             int              // An analysis id
+	Cluster        int              // A cluster ID to which this trajectory is assigned to
+}
 
 const (
 	Male   = 0
@@ -191,9 +201,9 @@ type Cohort struct {
 // pair.
 func MakeDxDRR(size int) [][]float64 {
 	DxDRR := make([][]float64, size)
-	for i, _ := range DxDRR {
+	for i := range DxDRR {
 		vec := make([]float64, size)
-		for j, _ := range vec {
+		for j := range vec {
 			vec[j] = 1.0
 		}
 		DxDRR[i] = vec
@@ -205,7 +215,7 @@ func MakeDxDRR(size int) [][]float64 {
 // diagnosis pair.
 func MakeDxDPatients(size int) [][][]*Patient {
 	DxDPatients := make([][][]*Patient, size)
-	for i, _ := range DxDPatients {
+	for i := range DxDPatients {
 		DxDPatients[i] = make([][]*Patient, size)
 	}
 	return DxDPatients
@@ -329,7 +339,7 @@ func selectRandomPatientsWithoutShuffle(patients []*Patient, ctr int, patientsTo
 func selectRandomPatientsFromSimilarCohorts(exp *Experiment, patients []*Patient, pids map[int]bool) []*Patient {
 	// for each cohort, see how many patients you need to select from it
 	cohortSimilar := make([][]*Patient, len(exp.Cohorts))
-	for i, _ := range cohortSimilar {
+	for i := range cohortSimilar {
 		cohortSimilar[i] = []*Patient{}
 	}
 	for _, p := range patients {
@@ -560,7 +570,7 @@ func (exp *Experiment) LoadDxDPatients(pMap *PatientMap, path string) {
 	}
 	//init DxDPatients map
 	for i, js := range exp.DxDPatients {
-		for j, _ := range js {
+		for j := range js {
 			exp.DxDPatients[i][j] = []*Patient{}
 		}
 	}
@@ -725,16 +735,6 @@ func (exp *Experiment) selectDiagnosisPairs(minPatients int, minRR float64) []*P
 	return pairs
 }
 
-// Trajectory holds all data relevant to a disease trajectory.
-type Trajectory struct {
-	Diagnoses      []int            // A list of diagnosis codes that represent the trajectory
-	PatientNumbers []int            // A list with nr of patients for each transition in the trajectory
-	Patients       [][]*Patient     // A list of patients with the given trajectory
-	TrajMap        map[*Patient]int // Maps patient IDs onto a diagnosis index for trajectory tracking
-	ID             int              // An analysis id
-	Cluster        int              // A cluster ID to which this trajectory is assigned to
-}
-
 // extendTrajectory tries to extend a given trajectory (currentT) with a diagnosis (d). It returns a map which maps all
 // patients that follow the extended trajectory onto an index in their diagnosis lists.
 func extendTrajectory(currentT *Trajectory, d int, minTime, maxTime float64) map[*Patient]int {
@@ -799,7 +799,7 @@ func (exp *Experiment) BuildTrajectories(minPatients, maxLength, minLength int, 
 						ps := make([][]*Patient, len(currentT.Patients))
 						copy(ps, currentT.Patients)
 						var patients []*Patient
-						for p, _ := range extendedTrajMap {
+						for p := range extendedTrajMap {
 							patients = append(patients, p)
 						}
 						newT := &Trajectory{

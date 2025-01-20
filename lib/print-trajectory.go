@@ -16,11 +16,11 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package trajectory
+package lib
 
 import (
 	"fmt"
-	"github.com/imec-int/ptra/utils"
+	"github.com/imec-int/ptra/lib/utils"
 	"io"
 	"os"
 	"path/filepath"
@@ -272,11 +272,11 @@ func PrintClusteredTrajectoriesToFile(exp *Experiment, name string) {
 		for _, trajectory := range c {
 			nodes := trajectory.Diagnoses
 			labels := trajectory.PatientNumbers
-			//print c and trajectory ID
+			//print cluster and trajectory IDs
 			line = fmt.Sprintf("%sCID:\t%d\tTID:\t%d\n", line, i, trajectory.ID)
 			fmt.Fprintf(file, line)
 			line = ""
-			//print trajectory
+			// print trajectory
 			for i, node := range nodes {
 				if i < len(nodes)-1 {
 					line = fmt.Sprintf("%s%s\t", line, exp.NameMap[node])

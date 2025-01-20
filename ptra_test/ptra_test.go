@@ -20,53 +20,53 @@ package ptra_test
 
 import (
 	"fmt"
-	"github.com/imec-int/ptra/app"
+	"github.com/imec-int/ptra/lib"
 	"github.com/imec-int/ptra/trajectory"
 	"testing"
 )
 
 func TestParseIcd10XML(t *testing.T) {
 	file := "./icd10cm_tabular_2022.xml"
-	icd10XML := app.ParseIcd10HierarchyFromXml(file)
-	app.PrintIcd10Hierarchy(icd10XML)
+	icd10XML := lib.ParseIcd10HierarchyFromXml(file)
+	lib.PrintIcd10Hierarchy(icd10XML)
 }
 
 func TestInitializeIcd10NameMap(t *testing.T) {
 	file := "./icd10cm_tabular_2022.xml"
-	icd10Names := app.InitializeIcd10NameMap(file)
-	app.PrintIcd10NameMap(icd10Names)
+	icd10Names := lib.InitializeIcd10NameMap(file)
+	lib.PrintIcd10NameMap(icd10Names)
 }
 
 func TestInitializeICD10AnalysisMap(t *testing.T) {
 	file := "./icd10cm_tabular_2022.xml"
-	icd10Names := app.InitializeIcd10NameMap(file)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 0)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 1)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 2)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 3)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 4)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 5)
-	app.InitializeIcd10AnalysisMaps(icd10Names, 6)
+	icd10Names := lib.InitializeIcd10NameMap(file)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 0)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 1)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 2)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 3)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 4)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 5)
+	lib.InitializeIcd10AnalysisMaps(icd10Names, 6)
 }
 
 func TestParseTrinetXPatients(t *testing.T) {
 	file := "./patient.csv"
 	nofCohortAges := 10
-	app.ParseTriNetXPatientData(file, nofCohortAges)
+	lib.ParseTriNetXPatientData(file, nofCohortAges)
 }
 
 func TestInitializeCohorts(t *testing.T) {
 	file1 := "./patient.csv"
 	nofCohortAges := 10
-	patients, _ := app.ParseTriNetXPatientData(file1, nofCohortAges)
+	patients, _ := lib.ParseTriNetXPatientData(file1, nofCohortAges)
 	file2 := "./diagnosis.csv"
 	file3 := "./icd10cm_tabular_2022.xml"
 	level := 0
-	analysisMaps := app.InitializeIcd10AnalysisMapsFromXML(file3, level)
-	app.ParseTrinetXPatientDiagnoses(file2, "", patients, analysisMaps, map[string]string{})
+	analysisMaps := lib.InitializeIcd10AnalysisMapsFromXML(file3, level)
+	lib.ParseTrinetXPatientDiagnoses(file2, "", patients, analysisMaps, map[string]string{})
 	nofDiagnosisCodes := analysisMaps.NofDiagnosisCodes
 	nofRegions := 1
-	cohorts := trajectory.InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
+	cohorts := lib.InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
 	for _, cohort := range cohorts {
 		cohort.Log(18)
 	}
@@ -94,12 +94,12 @@ func TestInitializeCohorts(t *testing.T) {
 func TestParseTrinetXPatientDiagnoses(t *testing.T) {
 	file1 := "./patient.csv"
 	nofCohortAges := 10
-	patients, _ := app.ParseTriNetXPatientData(file1, nofCohortAges)
+	patients, _ := lib.ParseTriNetXPatientData(file1, nofCohortAges)
 	file2 := "./diagnosis.csv"
 	file3 := "./icd10cm_tabular_2022.xml"
 	level := 0
-	analysisMaps := app.InitializeIcd10AnalysisMapsFromXML(file3, level)
-	app.ParseTrinetXPatientDiagnoses(file2, "", patients, analysisMaps, map[string]string{})
+	analysisMaps := lib.InitializeIcd10AnalysisMapsFromXML(file3, level)
+	lib.ParseTrinetXPatientDiagnoses(file2, "", patients, analysisMaps, map[string]string{})
 	fmt.Println("First 5 patients: ")
 	ctr := 0
 	for _, patient := range patients.PIDMap {
@@ -115,9 +115,9 @@ func TestParseTrinetXPatientDiagnoses(t *testing.T) {
 
 func TestInitCohortsWithFakePatients(t *testing.T) {
 	n := 100
-	patients := []*trajectory.Patient{}
+	patients := []*lib.Patient{}
 	for i := 0; i < n; i++ {
-		p := trajectory.Patient{
+		p := lib.Patient{
 			PID:       i,
 			PIDString: fmt.Sprint(i),
 			YOB:       1900 + i,
@@ -128,16 +128,16 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		if p.YOB >= 1950 {
 			p.CohortAge = 1
 		}
-		d1 := trajectory.Diagnosis{PID: i, DID: 0, Date: trajectory.DiagnosisDate{Year: 2019, Day: 26, Month: 8}} // smoking
-		d2 := trajectory.Diagnosis{PID: i, DID: 1, Date: trajectory.DiagnosisDate{Year: 2020, Day: 26, Month: 8}} // cancer1
-		d3 := trajectory.Diagnosis{PID: i, DID: 2, Date: trajectory.DiagnosisDate{Year: 2021, Day: 26, Month: 8}} // drinking
-		d4 := trajectory.Diagnosis{PID: i, DID: 3, Date: trajectory.DiagnosisDate{Year: 2022, Day: 26, Month: 8}} // cancer2
-		p.Diagnoses = []*trajectory.Diagnosis{&d1, &d2, &d3, &d4}
+		d1 := lib.Diagnosis{PID: i, DID: 0, Date: lib.DiagnosisDate{Year: 2019, Day: 26, Month: 8}} // smoking
+		d2 := lib.Diagnosis{PID: i, DID: 1, Date: lib.DiagnosisDate{Year: 2020, Day: 26, Month: 8}} // cancer1
+		d3 := lib.Diagnosis{PID: i, DID: 2, Date: lib.DiagnosisDate{Year: 2021, Day: 26, Month: 8}} // drinking
+		d4 := lib.Diagnosis{PID: i, DID: 3, Date: lib.DiagnosisDate{Year: 2022, Day: 26, Month: 8}} // cancer2
+		p.Diagnoses = []*lib.Diagnosis{&d1, &d2, &d3, &d4}
 		// try to show a strong link between smoking->cancer1 and drinking->cancer2
-		patients = trajectory.AppendPatient(patients, &p)
+		patients = lib.AppendPatient(patients, &p)
 	}
 	for i := n; i < 2*n; i++ {
-		p := trajectory.Patient{
+		p := lib.Patient{
 			PID:       i,
 			PIDString: fmt.Sprint(i),
 			YOB:       1900 + i - n,
@@ -148,15 +148,15 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		if p.YOB >= 1950 {
 			p.CohortAge = 1
 		}
-		d1 := trajectory.Diagnosis{PID: i, DID: 0, Date: trajectory.DiagnosisDate{Year: 2019, Day: 26, Month: 8}} // smoking
-		d2 := trajectory.Diagnosis{PID: i, DID: 1, Date: trajectory.DiagnosisDate{Year: 2020, Day: 26, Month: 8}} // cancer1
-		d3 := trajectory.Diagnosis{PID: i, DID: 2, Date: trajectory.DiagnosisDate{Year: 2021, Day: 26, Month: 8}} // drinking
-		d4 := trajectory.Diagnosis{PID: i, DID: 3, Date: trajectory.DiagnosisDate{Year: 2022, Day: 26, Month: 8}} // cancer2
-		p.Diagnoses = []*trajectory.Diagnosis{&d1, &d2, &d3, &d4}
-		patients = trajectory.AppendPatient(patients, &p)
+		d1 := lib.Diagnosis{PID: i, DID: 0, Date: lib.DiagnosisDate{Year: 2019, Day: 26, Month: 8}} // smoking
+		d2 := lib.Diagnosis{PID: i, DID: 1, Date: lib.DiagnosisDate{Year: 2020, Day: 26, Month: 8}} // cancer1
+		d3 := lib.Diagnosis{PID: i, DID: 2, Date: lib.DiagnosisDate{Year: 2021, Day: 26, Month: 8}} // drinking
+		d4 := lib.Diagnosis{PID: i, DID: 3, Date: lib.DiagnosisDate{Year: 2022, Day: 26, Month: 8}} // cancer2
+		p.Diagnoses = []*lib.Diagnosis{&d1, &d2, &d3, &d4}
+		patients = lib.AppendPatient(patients, &p)
 	}
 	for i := 2 * n; i < 3*n; i++ {
-		p := trajectory.Patient{
+		p := lib.Patient{
 			PID:       i,
 			PIDString: fmt.Sprint(i),
 			YOB:       1900 + i - 2*n,
@@ -168,10 +168,10 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 			p.CohortAge = 1
 		}
 		//d1 := Diagnosis{PID: i, DID: 0, Date: DiagnosisDate{Year: 2019, Day: 26, Month: 8},} no smoking
-		d2 := trajectory.Diagnosis{PID: i, DID: 1, Date: trajectory.DiagnosisDate{Year: 2020, Day: 26, Month: 8}}
+		d2 := lib.Diagnosis{PID: i, DID: 1, Date: lib.DiagnosisDate{Year: 2020, Day: 26, Month: 8}}
 		//d3 := Diagnosis{PID: i, DID: 2, Date: DiagnosisDate{Year: 2020, Day: 26, Month: 8},} no drinking
-		d4 := trajectory.Diagnosis{PID: i, DID: 3, Date: trajectory.DiagnosisDate{Year: 2021, Day: 26, Month: 8}}
-		p.Diagnoses = []*trajectory.Diagnosis{}
+		d4 := lib.Diagnosis{PID: i, DID: 3, Date: lib.DiagnosisDate{Year: 2021, Day: 26, Month: 8}}
+		p.Diagnoses = []*lib.Diagnosis{}
 		// small nr of people get cancer1 without smoking
 		if p.YOB >= 1925 && p.YOB <= 1930 {
 			p.Diagnoses = append(p.Diagnoses, &d2)
@@ -185,10 +185,10 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		if p.YOB >= 1990 && p.YOB <= 1995 {
 			p.Diagnoses = append(p.Diagnoses, &d4)
 		}
-		patients = trajectory.AppendPatient(patients, &p)
+		patients = lib.AppendPatient(patients, &p)
 	}
 	for i := 3 * n; i < 4*n; i++ {
-		p := trajectory.Patient{
+		p := lib.Patient{
 			PID:       i,
 			PIDString: fmt.Sprint(i),
 			YOB:       1920 + i - 3*n,
@@ -200,10 +200,10 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 			p.CohortAge = 1
 		}
 		//d1 := Diagnosis{PID: i, DID: 0, Date: DiagnosisDate{Year: 2019, Day: 26, Month: 8},}
-		d2 := trajectory.Diagnosis{PID: i, DID: 1, Date: trajectory.DiagnosisDate{Year: 2020, Day: 26, Month: 8}}
+		d2 := lib.Diagnosis{PID: i, DID: 1, Date: lib.DiagnosisDate{Year: 2020, Day: 26, Month: 8}}
 		//d3 := Diagnosis{PID: i, DID: 2, Date: DiagnosisDate{Year: 2020, Day: 26, Month: 8},}
-		d4 := trajectory.Diagnosis{PID: i, DID: 3, Date: trajectory.DiagnosisDate{Year: 2021, Day: 26, Month: 8}}
-		p.Diagnoses = []*trajectory.Diagnosis{}
+		d4 := lib.Diagnosis{PID: i, DID: 3, Date: lib.DiagnosisDate{Year: 2021, Day: 26, Month: 8}}
+		p.Diagnoses = []*lib.Diagnosis{}
 		// small nr of people get cancer1 without smoking
 		if p.YOB >= 1925 && p.YOB <= 1930 {
 			p.Diagnoses = append(p.Diagnoses, &d2)
@@ -217,9 +217,9 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		if p.YOB >= 1990 && p.YOB <= 1995 {
 			p.Diagnoses = append(p.Diagnoses, &d4)
 		}
-		patients = trajectory.AppendPatient(patients, &p)
+		patients = lib.AppendPatient(patients, &p)
 	}
-	pMap := map[int]*trajectory.Patient{}
+	pMap := map[int]*lib.Patient{}
 	pidMap := map[string]int{}
 	ctr := 0
 	for _, patient := range patients {
@@ -227,28 +227,28 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		pMap[patient.PID] = patient
 		pidMap[patient.PIDString] = patient.PID
 	}
-	PMap := &trajectory.PatientMap{
+	PMap := &lib.PatientMap{
 		PIDStringMap: pidMap,
 		Ctr:          ctr,
 		PIDMap:       pMap,
 		MaleCtr:      ctr,
 		FemaleCtr:    0,
 	}
-	cohorts := trajectory.InitializeCohorts(PMap, 2, 1, 4)
+	cohorts := lib.InitializeCohorts(PMap, 2, 1, 4)
 	fmt.Println("Printing cohorts")
 	for _, cohort := range cohorts {
 		cohort.Log(4)
 	}
-	cohort := trajectory.MergeCohorts(cohorts)
+	cohort := lib.MergeCohorts(cohorts)
 	cohort.Log(4)
 	//Test building trajectories
 	nameMap := map[int]string{0: "Smoking", 1: "Lung cancer", 2: "Drinking", 3: "Liver cancer"}
-	exp := &trajectory.Experiment{
+	exp := &lib.Experiment{
 		NofAgeGroups:      2,
 		Level:             0,
 		NofDiagnosisCodes: 4,
-		DxDRR:             trajectory.MakeDxDRR(4),
-		DxDPatients:       trajectory.MakeDxDPatients(4),
+		DxDRR:             lib.MakeDxDRR(4),
+		DxDPatients:       lib.MakeDxDPatients(4),
 		DPatients:         cohort.DPatients,
 		Name:              "exp1",
 		Cohorts:           cohorts,
@@ -264,7 +264,7 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	trajectories := exp.BuildTrajectories(5, 3, 2, 1, 5, 1.0, []trajectory.TrajectoryFilter{})
 	fmt.Println("Collected ", len(trajectories), " trajectories.")
 	for _, traj := range trajectories {
-		trajectory.LogTrajectory(traj, exp)
+		lib.LogTrajectory(traj, exp)
 	}
 	exp.PrintTrajectoriesToFile("./output")
 	//Output should be:

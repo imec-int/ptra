@@ -2,7 +2,7 @@
 // Ideally there should be a proper wrapper supporting the whole API of mcl but
 // this is out-of-scope for now.
 
-package cluster
+package lib
 
 import (
 	"bytes"

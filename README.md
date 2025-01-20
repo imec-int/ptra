@@ -611,16 +611,16 @@ takes as input the experiment object created in step 1 and an output path.
 
 ### 5. Cluster the trajectories and output the clusters to disk.
 
-The trajectories can be clustered by calling the function `cluster.ClusterTrajectoriesDirectly`. The signature of this 
+The trajectories can be clustered by calling the function `cluster.ClusterTrajectories`. The signature of this 
 function is:
 
 ```
 
-func ClusterTrajectoriesDirectly(exp *trajectory.Experiment, granularities []int, path, pathToMcl string) {
+func ClusterTrajectories(exp *Experiment, granularities []int, path string) error {
 
 ```
 
 The parameters of this function are:
-* the `trajectory.Experiment` object `exp` created in step 1
+* the `Experiment` object `exp` created in step 1
 * the `granularities` parameter: a list of granularities for the clustering step. This is a parameter passed via the CLI.
-* the `pathToMCL` parameter: a path to the clustering tool. This parameter is passed via the CLI.
+* the `path` parameter: a path to the working directory to output the clustered trajectories
