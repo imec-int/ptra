@@ -137,11 +137,12 @@ func convertTrajectoriesToGraph(exp *Experiment) ([]int, [][][]int) {
 	return nodes, am
 }
 
-func printTrajectory(trajectory Trajectory, nameMap map[int]string, w io.Writer) {
+func printTrajectory(trajectory Trajectory, exp Experiment, w io.Writer) {
 	TID := trajectory.ID
 	nodes := trajectory.Diagnoses
 	edges := trajectory.Diagnoses
-	labels := trajectory.PatientNumbers
+	nameMap := exp.NameMap
+	d1 := trajectory.Diagnoses[0]
 
 	// print nodes
 	for _, node := range nodes {
@@ -154,14 +155,17 @@ func printTrajectory(trajectory Trajectory, nameMap map[int]string, w io.Writer)
 		target := edges[i+1]
 		first := utils.BoolToInt(i == 0)
 		last := utils.BoolToInt(i == len(edges)-2)
-		fmt.Fprintf(w, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttfirst %d\n\t\ttlast %d\n\t\tsource %d\n\t\ttarget %d\n\t\tlabel %d\n\t]\n", TID, first, last, source, target, labels[i]))
+		d2 := trajectory.Diagnoses[i]
+		patients := trajectory.PatientNumbers[i]
+		RR := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
+		fmt.Fprintf(w, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttfirst %d\n\t\ttlast %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\t\tRR \"%s\"\n\t]\n", TID, first, last, source, target, patients, RR))
 	}
 }
 
-// printTrajectoriesToOneGraphFile plots all of an experiment's trajectories as a single graph to a GML file. The nodes
+// printTrajectories plots all of an experiment's trajectories as a single graph to a GML file. The nodes
 // in the graph are the medical terms for the diagnoses that make up the trajectories. The edges are derived from the
 // transitions between diagnoses in the trajectories.
-func printTrajectoriesToOneGraphFile(exp *Experiment, name string) {
+func printTrajectories(exp *Experiment, name string) {
 	file, err := os.Create(name)
 	if err != nil {
 		panic(err)
@@ -175,14 +179,14 @@ func printTrajectoriesToOneGraphFile(exp *Experiment, name string) {
 	fmt.Fprintf(file, "graph [\n\tdirected 1\n\tmultigraph 1\n")
 	trajects := exp.Trajectories
 	for _, traject := range trajects {
-		printTrajectory(*traject, exp.NameMap, file)
+		printTrajectory(*traject, *exp, file)
 	}
 	// close graph
 	fmt.Fprintf(file, "]\n")
 }
 
-// printTrajectoriesToIndividualGraphsFile prints each trajectory as a separate subgraph to the same GML output file.
-func printTrajectoriesToIndividualGraphsFile(exp *Experiment, name string) {
+// printIndividualTrajectories prints each trajectory as a separate subgraph to the same GML output file.
+func printIndividualTrajectories(exp *Experiment, name string) {
 	file, err := os.Create(name)
 	if err != nil {
 		panic(err)
@@ -195,9 +199,9 @@ func printTrajectoriesToIndividualGraphsFile(exp *Experiment, name string) {
 	trajects := exp.Trajectories
 	for _, traject := range trajects {
 		// new graph per trajectory
-		fmt.Fprintf(file, "graph [\n\t\tdirected 1\n\t\tmultigraph 1\n")
+		fmt.Fprintf(file, "graph [\n\tdirected 1\n\tmultigraph 1\n")
 
-		printTrajectory(*traject, exp.NameMap, file)
+		printTrajectory(*traject, *exp, file)
 
 		// close graph
 		fmt.Fprintf(file, "]\n")
@@ -214,14 +218,15 @@ func (exp *Experiment) PrintTrajectoriesToFile(path string) {
 	// create a file where all trajectories are separate graphs
 	// create a file where all trajectories are combined into 1 graph
 	// create a file that just has each trajectory as a tab seperated list of disease codes
+	os.Mkdir(path, 0700)
 	tabFileName := filepath.Join(path, fmt.Sprintf("%s-trajectories.tab", exp.Name))
 	printTrajectoriesToTabFile(exp.Trajectories, exp.NameMap, tabFileName)
 	tabFileName2 := filepath.Join(path, fmt.Sprintf("%s-pairs.tab", exp.Name))
 	printPairsToTabFile(exp, tabFileName2)
 	graphFileName := filepath.Join(path, fmt.Sprintf("%s-trajectories-merged-graph.gml", exp.Name))
-	printTrajectoriesToOneGraphFile(exp, graphFileName)
+	printTrajectories(exp, graphFileName)
 	graphsFileName := filepath.Join(path, fmt.Sprintf("%s-trajectories-individual-graphs.gml", exp.Name))
-	printTrajectoriesToIndividualGraphsFile(exp, graphsFileName)
+	printIndividualTrajectories(exp, graphsFileName)
 }
 
 // collectClusters returns a map from cluster ID to a set of trajectories that belong to that cluster

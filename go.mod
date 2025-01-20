@@ -1,6 +1,6 @@
 module github.com/imec-int/ptra
 
-go 1.17
+go 1.23
 
 require (
 	github.com/exascience/pargo v1.1.0

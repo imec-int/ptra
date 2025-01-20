@@ -21,7 +21,6 @@ package ptra_test
 import (
 	"fmt"
 	"github.com/imec-int/ptra/lib"
-	"github.com/imec-int/ptra/trajectory"
 	"testing"
 )
 
@@ -261,21 +260,21 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		fmt.Print(rr, ", ")
 	}
 	fmt.Println("...]")
-	trajectories := exp.BuildTrajectories(5, 3, 2, 1, 5, 1.0, []trajectory.TrajectoryFilter{})
+	trajectories := exp.BuildTrajectories(5, 3, 2, 1, 5, 1.0, []lib.TrajectoryFilter{})
 	fmt.Println("Collected ", len(trajectories), " trajectories.")
 	for _, traj := range trajectories {
 		lib.LogTrajectory(traj, exp)
 	}
 	exp.PrintTrajectoriesToFile("./output")
-	//Output should be:
-	//Building patient trajectories...
-	//Selecting diagnosis pairs for building trajectories...
-	//Found  4  suitable diagnosis pairs.
-	//Found  5  trajectories.
-	//Collected  5  trajectories.
-	//Smoking -- 200 --> Lung cancer
-	//Smoking -- 200 --> Drinking -- 200 --> Liver cancer
-	//Smoking -- 200 --> Drinking
-	//Smoking -- 200 --> Liver cancer
-	//Drinking -- 200 --> Liver cancer
+	// Output should be:
+	// Building patient trajectories...
+	// Selecting diagnosis pairs for building trajectories...
+	// Found  4  suitable diagnosis pairs.
+	// Found  5  trajectories.
+	// Collected  5  trajectories.
+	// Smoking -- 200 --> Lung cancer
+	// Smoking -- 200 --> Drinking -- 200 --> Liver cancer
+	// Smoking -- 200 --> Drinking
+	// Smoking -- 200 --> Liver cancer
+	// Drinking -- 200 --> Liver cancer
 }
