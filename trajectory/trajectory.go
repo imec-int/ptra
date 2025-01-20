@@ -441,9 +441,7 @@ func patientsToIdMap(patients []*Patient) map[int]bool {
 func (exp *Experiment) InitializeExperimentRelativeRiskRatios(minTime, maxTime float64, iter int) {
 	fmt.Println("Initializing relative risk ratios...")
 	fmt.Println("Sampling ", iter, " comparison groups for each diagnosis pair...")
-	// init random nr generator
-	rand.Seed(time.Now().UnixNano())
-	indexVector := []int{}
+	var indexVector []int
 	for i := 0; i < exp.NofDiagnosisCodes; i++ {
 		indexVector = append(indexVector, i)
 	}
