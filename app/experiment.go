@@ -97,7 +97,7 @@ func Run(args *ExperimentParams) (err error) {
 		exp.LoadRRMatrix(args.LoadRR)
 		exp.LoadDxDPatients(patients, fmt.Sprintf("%s.patients.csv", args.LoadRR))
 	} else {
-		exp.InitializeExperimentRelativeRiskRatios(args.MinYears, args.MaxYears, args.Iter)
+		exp.InitRR(args.MinYears, args.MaxYears, args.Iter)
 	}
 	if args.SaveRR != "" { // save RR matrix to file + DPatients
 		exp.SaveRRMatrix(args.SaveRR)

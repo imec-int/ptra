@@ -255,8 +255,7 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		NameMap:           nameMap,
 		Trajectories:      nil,
 	}
-	//initializeExperimentRelativeRiskRatios(exp, 0.5, 5.0)
-	exp.InitializeExperimentRelativeRiskRatios(0.5, 5.0, 10)
+	exp.InitRR(0.5, 5.0, 10)
 	fmt.Println("Relative risk ratios: [")
 	for _, rr := range exp.DxDRR {
 		fmt.Print(rr, ", ")
