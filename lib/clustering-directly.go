@@ -16,26 +16,26 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package cluster
+package lib
 
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/imec-int/ptra/trajectory"
-	"github.com/imec-int/ptra/utils"
+	"github.com/imec-int/ptra/lib/utils"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 )
 
 // jaccardTrajectory computes the Jaccard similarity coefficient for two given trajectories.
-func jaccardTrajectory(t1, t2 *trajectory.Trajectory) float64 {
+func jaccardTrajectory(t1, t2 *Trajectory) float64 {
 	// intersect t1 and t2
 	n := 0
 	for _, d1 := range t1.Diagnoses {
-		if utils.MemberInt(d1, t2.Diagnoses) {
+		if slices.Contains(t2.Diagnoses, d1) {
 			n++
 		}
 	}
@@ -45,10 +45,10 @@ func jaccardTrajectory(t1, t2 *trajectory.Trajectory) float64 {
 }
 
 // SzymkiewiczSimpsonTrajectory computes the Szymkiewicz-Simpson similarity coefficient for two given trajectories.
-func SzymkiewiczSimpsonTrajectory(t1, t2 *trajectory.Trajectory) float64 {
+func SzymkiewiczSimpsonTrajectory(t1, t2 *Trajectory) float64 {
 	n := 0
 	for _, d1 := range t1.Diagnoses {
-		if utils.MemberInt(d1, t2.Diagnoses) {
+		if slices.Contains(t2.Diagnoses, d1) {
 			n++
 		}
 	}
@@ -58,10 +58,10 @@ func SzymkiewiczSimpsonTrajectory(t1, t2 *trajectory.Trajectory) float64 {
 }
 
 // SorensenDiceTrajectory computes the SorensenDice similarity coefficient for two given trajectories.
-func SorensenDiceTrajectory(t1, t2 *trajectory.Trajectory) float64 {
+func SorensenDiceTrajectory(t1, t2 *Trajectory) float64 {
 	n := 0
 	for _, d1 := range t1.Diagnoses {
-		if utils.MemberInt(d1, t2.Diagnoses) {
+		if slices.Contains(t2.Diagnoses, d1) {
 			n++
 		}
 	}
@@ -72,7 +72,7 @@ func SorensenDiceTrajectory(t1, t2 *trajectory.Trajectory) float64 {
 
 // convertTrajectoriesToAbcFormat compute the jaccard between each trajectory and writes out the result to file.
 // Streaming algorithm to avoid pressure on memory.
-func convertTrajectoriesToAbcFormat(exp *trajectory.Experiment, name string) {
+func convertTrajectoriesToAbcFormat(exp *Experiment, name string) {
 	//create output file
 	file, err := os.Create(name)
 	if err != nil {
@@ -93,10 +93,10 @@ func convertTrajectoriesToAbcFormat(exp *trajectory.Experiment, name string) {
 	}
 }
 
-// ClusterTrajectoriesDirectly performs clustering of the trajectories that have been calculated for a given experiment.
+// ClusterTrajectories performs clustering of the trajectories that have been calculated for a given experiment.
 // It does a pairwise comparison of all trajectories by calculating the jaccard similarity coefficients. Subsequently,
 // MCL clustering is used to group the trajectories by jaccard similarity into clusters.
-func ClusterTrajectoriesDirectly(exp *trajectory.Experiment, granularities []int, path string) error {
+func ClusterTrajectories(exp *Experiment, granularities []int, path string) error {
 	fmt.Println("Clustering trajectories directly with MCL")
 	// convert trajectories to abc format for the Mcl tool
 	dirName := fmt.Sprintf("%s-clusters-directly/", exp.Name)
@@ -107,7 +107,7 @@ func ClusterTrajectoriesDirectly(exp *trajectory.Experiment, granularities []int
 		return derr
 	}
 
-	// change working dir cause Mcl program dumps files into working dir
+	// change working dir because Mcl program dumps files into working dir
 	cdErr := os.Chdir(workingDir)
 	if cdErr != nil {
 		return cdErr
@@ -144,9 +144,8 @@ func ClusterTrajectoriesDirectly(exp *trajectory.Experiment, granularities []int
 	for _, gran := range granularities {
 		dumpFileName := fmt.Sprintf("%s.I%d", outFileName, gran)
 		convertToDirectTrajectoryClusterGraphs(exp, dumpFileName, fmt.Sprintf("%s.trajectories.gml", dumpFileName))
-		convertToDirectTrajectoryClusterGraphsRR(exp, dumpFileName, fmt.Sprintf("%s.trajectories.RR.gml", dumpFileName))
-		trajectory.PrintClusteredTrajectoriesToFile(exp, fmt.Sprintf("%s.clustered.trajectories.tab", dumpFileName))
-		trajectory.PrintClustersToCSVFiles(exp, fmt.Sprintf("%s.clustered.patients.csv", dumpFileName),
+		PrintClusteredTrajectoriesToFile(exp, fmt.Sprintf("%s.clustered.trajectories.tab", dumpFileName))
+		PrintClustersToCSVFiles(exp, fmt.Sprintf("%s.clustered.patients.csv", dumpFileName),
 			fmt.Sprintf("%s.clustered.clusters.csv", dumpFileName))
 	}
 
@@ -155,8 +154,8 @@ func ClusterTrajectoriesDirectly(exp *trajectory.Experiment, granularities []int
 
 // collectTrajectoriesFromClusterData looks up trajectories associated with a given list of trajectory ids and assigns
 // each of these to a specific cluster id. It returns the list of trajectory objects.
-func collectTrajectoriesFromClusterData(exp *trajectory.Experiment, ids []int, clusterID int) []*trajectory.Trajectory {
-	ts := []*trajectory.Trajectory{}
+func collectTrajectoriesFromClusterData(exp *Experiment, ids []int, clusterID int) []*Trajectory {
+	ts := []*Trajectory{}
 	for _, id := range ids {
 		// assign cluster label to trajectory
 		exp.Trajectories[id].Cluster = clusterID
@@ -165,12 +164,11 @@ func collectTrajectoriesFromClusterData(exp *trajectory.Experiment, ids []int, c
 	return ts
 }
 
-// convertToDirectTrajectoryClusterGraphs produces a GML graph file for the clustered trajectories in an experiment. For
-// this, it parses the cluster output from MCL, which is a file that lists for each cluster id a list of trajectory ids
-// that are assigned to it. Then it looks up the concrete trajectory objects for each trajectory id. Finally, each
-// cluster is written to the output file by writing all the cluster's trajectories as part of a subgraph for that
-// cluster.
-func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, output string) {
+// convertToDirectTrajectoryClusterGraphs converts MCL cluster output - a file with for each cluster id a list of
+// trajectory ids - to a GML output file that plots the trajectories as graphs. Each cluster is plotted as a separate
+// subgraph, with diagnosis codes used as nodes and trajectory transitions used as edges. The edges are annotated with
+// the relatitive risk score (RR) and number of patients associated with the diagnosis pair that the edge represents.
+func convertToDirectTrajectoryClusterGraphs(exp *Experiment, input, output string) {
 	file, err := os.Open(input)
 	if err != nil {
 		panic(err)
@@ -187,6 +185,7 @@ func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, o
 			panic(oerr)
 		}
 	}()
+
 	// trajectories to assign to clusters
 	nofClusters := 0
 
@@ -223,7 +222,7 @@ func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, o
 		for _, t := range collected {
 			for _, node := range t.Diagnoses {
 				if _, ok := nodePrinted[node]; !ok {
-					fmt.Fprintf(ofile, fmt.Sprintf("node [\n\tid %d\n\tlabel\"%s\"\n\t]\n", node, exp.NameMap[node]))
+					fmt.Fprintf(ofile, fmt.Sprintf("\tnode [\n\t\tid %d\n\t\tlabel\"%s\"\n\t]\n", node, exp.NameMap[node]))
 					nodePrinted[node] = true
 				}
 			}
@@ -260,11 +259,11 @@ func convertToDirectTrajectoryClusterGraphs(exp *trajectory.Experiment, input, o
 
 // percentMalesFemales computes for a given list of patients the percentage of males and females wrt to the total number
 // of males and females in the experiment.
-func percentMalesFemales(exp *trajectory.Experiment, ps []*trajectory.Patient) (float64, float64) {
+func percentMalesFemales(exp *Experiment, ps []*Patient) (float64, float64) {
 	m := 0
 	f := 0
 	for _, p := range ps {
-		if p.Sex == trajectory.Male {
+		if p.Sex == Male {
 			m++
 		} else {
 			f++
@@ -274,7 +273,7 @@ func percentMalesFemales(exp *trajectory.Experiment, ps []*trajectory.Patient) (
 }
 
 // getDiagnosisDate returns the concrete diagnosis date for a given pair of diagnosis ids.
-func getDiagnosisDate(p *trajectory.Patient, d1, d2 int) trajectory.DiagnosisDate {
+func getDiagnosisDate(p *Patient, d1, d2 int) DiagnosisDate {
 	d1idx := -1
 	d2idx := -1
 	for i, d := range p.Diagnoses {
@@ -291,18 +290,18 @@ func getDiagnosisDate(p *trajectory.Patient, d1, d2 int) trajectory.DiagnosisDat
 
 // percentEOI computes percent of patients that have their event of interest at the time of the transition of disease
 // d1 -> d2
-func percentEOI(exp *trajectory.Experiment, ps []*trajectory.Patient, d1, d2 int) float64 {
+func percentEOI(exp *Experiment, ps []*Patient, d1, d2 int) float64 {
 	eoictr := 0
 	for _, p := range ps {
 		d := getDiagnosisDate(p, d1, d2)
-		if p.EOIDate != nil && trajectory.DiagnosisDateSmallerThan(*p.EOIDate, d) {
+		if p.EOIDate != nil && DiagnosisDateSmallerThan(*p.EOIDate, d) {
 			eoictr++
 		}
 	}
 	return (100.0 / float64(len(ps))) * float64(eoictr)
 }
 
-func transitionInformation(exp *trajectory.Experiment, t *trajectory.Trajectory, i, d1, d2 int) (string, string, string) {
+func transitionInformation(exp *Experiment, t *Trajectory, i, d1, d2 int) (string, string, string) {
 	rr := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
 	m, f := percentMalesFemales(exp, t.Patients[i])
 	mfratio := strconv.FormatFloat(m/f, 'f', 2, 64)
@@ -314,7 +313,7 @@ func transitionInformation(exp *trajectory.Experiment, t *trajectory.Trajectory,
 // trajectory ids - to a GML output file that plots the trajectories as graphs. Each cluster is plotted as a separate
 // subgraph, with diagnosis codes used as nodes and trajectory transitions used as edges. The edges are annotated with
 // the relatitive risk score (RR) associated with the diagnosis pair that the edge represents.
-func convertToDirectTrajectoryClusterGraphsRR(exp *trajectory.Experiment, input, output string) {
+func convertToDirectTrajectoryClusterGraphsRR(exp *Experiment, input, output string) {
 	file, err := os.Open(input)
 	if err != nil {
 		panic(err)

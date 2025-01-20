@@ -16,26 +16,33 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package app
+package lib
 
 import (
-	"github.com/imec-int/ptra/trajectory"
 	"strings"
 )
 
-func GetPatientFilter(s string, tinfo map[string][]*TumorInfo) trajectory.PatientFilter {
-	id := func(p *trajectory.Patient) bool { return true }
+// PatientFilter prescribes a function type for implementing filters on TriNetX patients, to be able to calculate
+// trajectories for specific cohorts. E.g. male patients, patients <70 years, patients with specific cancer stage, etc.
+type PatientFilter func(patient *Patient) bool
+
+// TrajectoryFilter is a type to define a trajectory filter function. Such filters take as input a trajectory and must
+// return a bool as output that determines if a trajectory passes a filter or not.
+type TrajectoryFilter func(t *Trajectory) bool
+
+func GetPatientFilter(s string, tinfo map[string][]*TumorInfo) PatientFilter {
+	id := func(p *Patient) bool { return true }
 	switch s {
 	case "id":
 		return id
 	case "age70+":
-		return trajectory.AboveSeventyAggregator()
+		return AboveSeventyAggregator()
 	case "age70-":
-		return trajectory.LessThanSeventyAggregator()
+		return LessThanSeventyAggregator()
 	case "male":
-		return trajectory.FemaleFilter()
+		return FemaleFilter()
 	case "female":
-		return trajectory.MaleFilter()
+		return MaleFilter()
 	case "Ta":
 		return TaStageAggregator(tinfo)
 	case "T1":
@@ -61,9 +68,9 @@ func GetPatientFilter(s string, tinfo map[string][]*TumorInfo) trajectory.Patien
 	case "M1":
 		return M1StageAggregator(tinfo)
 	case "EOI-":
-		return trajectory.EOIAfterFilter()
+		return EOIAfterFilter()
 	case "EOI+":
-		return trajectory.EOIBeforeFilter()
+		return EOIBeforeFilter()
 	case "MIBC":
 		return MIBCAggregator(tinfo)
 	case "NMIBC":
@@ -75,8 +82,8 @@ func GetPatientFilter(s string, tinfo map[string][]*TumorInfo) trajectory.Patien
 	}
 }
 
-func GetPatientFilters(filters string, tinfo map[string][]*TumorInfo) []trajectory.PatientFilter {
-	var result []trajectory.PatientFilter
+func GetPatientFilters(filters string, tinfo map[string][]*TumorInfo) []PatientFilter {
+	var result []PatientFilter
 	for _, f := range strings.Split(filters, ",") {
 		trimmed := strings.Trim(f, " ")
 		result = append(result, GetPatientFilter(trimmed, tinfo))
@@ -84,8 +91,8 @@ func GetPatientFilters(filters string, tinfo map[string][]*TumorInfo) []trajecto
 	return result
 }
 
-func GetTrajectoryFilters(filters string, exp *trajectory.Experiment) []trajectory.TrajectoryFilter {
-	var result []trajectory.TrajectoryFilter
+func GetTrajectoryFilters(filters string, exp *Experiment) []TrajectoryFilter {
+	var result []TrajectoryFilter
 	for _, f := range strings.Split(filters, ",") {
 		trimmed := strings.Trim(f, " ")
 		result = append(result, GetTrajectoryFilter(trimmed, exp))
@@ -93,8 +100,8 @@ func GetTrajectoryFilters(filters string, exp *trajectory.Experiment) []trajecto
 	return result
 }
 
-func GetTrajectoryFilter(filter string, exp *trajectory.Experiment) trajectory.TrajectoryFilter {
-	id := func(t *trajectory.Trajectory) bool { return true }
+func GetTrajectoryFilter(filter string, exp *Experiment) TrajectoryFilter {
+	id := func(t *Trajectory) bool { return true }
 	switch filter {
 	case "neoplasm":
 		return CancerTrajectoryFilter(exp)
@@ -107,8 +114,8 @@ func GetTrajectoryFilter(filter string, exp *trajectory.Experiment) trajectory.T
 
 // cancerStageAggregator filters a set of patients to only include those that satisfy a given predicate that is applied
 // on the patient's tumor information (which encodes cancer stages etc).
-func cancerStageAggregator(predicate func(tInfo *TumorInfo) bool, tInfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
-	return func(p *trajectory.Patient) bool {
+func cancerStageAggregator(predicate func(tInfo *TumorInfo) bool, tInfoMap map[string][]*TumorInfo) PatientFilter {
+	return func(p *Patient) bool {
 		//multiple tumor info entries per patient possible
 		if tInfos, ok := tInfoMap[p.PIDString]; ok {
 			if !ok {
@@ -125,9 +132,9 @@ func cancerStageAggregator(predicate func(tInfo *TumorInfo) bool, tInfoMap map[s
 				// filter out diagnoses at later dates if possibly followed by other cancer stage
 				if tInfoToUseIndex+1 < len(tInfos) {
 					nextStageDate := tInfos[tInfoToUseIndex+1].Date
-					newD := []*trajectory.Diagnosis{}
+					newD := []*Diagnosis{}
 					for _, d := range p.Diagnoses {
-						if trajectory.DiagnosisDateSmallerThan(d.Date, nextStageDate) {
+						if DiagnosisDateSmallerThan(d.Date, nextStageDate) {
 							newD = append(newD, d)
 						} else {
 							continue
@@ -144,7 +151,7 @@ func cancerStageAggregator(predicate func(tInfo *TumorInfo) bool, tInfoMap map[s
 
 // NMIBCAggregator checks all patients if they match the cancer criteria to be defined as non muscle invasive bladder
 // cancer patients.
-func NMIBCAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func NMIBCAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "Tis" || tInfo.TStage == "Ta" ||
 			(tInfo.TStage == "T1" && tInfo.NStage == "N0" && tInfo.MStage == "M0") {
@@ -156,7 +163,7 @@ func NMIBCAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter 
 
 // MIBCAggregator checks all patients if they match the cancer criteria to be defined as muscle invasive bladder cancer
 // patients.
-func MIBCAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func MIBCAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "T2" || tInfo.TStage == "T3" ||
 			(tInfo.TStage == "T4" && tInfo.MStage == "M0" &&
@@ -169,7 +176,7 @@ func MIBCAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
 
 // MUCAggregator checks all patients if they match the cancer criteria to be defined as metastisized bladder cancer
 // patients.
-func MUCAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func MUCAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.MStage == "M0" {
 			return true
@@ -179,7 +186,7 @@ func MUCAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
 }
 
 // TaStageAggregator collects patients with stage Ta bladder cancer.
-func TaStageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func TaStageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "Ta" {
 			return true
@@ -189,7 +196,7 @@ func TaStageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // T1StageAggregator collects patients with stage T1 bladder cancer.
-func T1StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func T1StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "T1" || tInfo.TStage == "T1a" || tInfo.TStage == "T1c" {
 			return true
@@ -199,7 +206,7 @@ func T1StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // TisStageAggregator collects patients with stage Tis bladder cancer.
-func TisStageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func TisStageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "Tis" {
 			return true
@@ -209,7 +216,7 @@ func TisStageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilt
 }
 
 // T2StageAggregator collects patients with stage T2 bladder cancer.
-func T2StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func T2StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "T2" || tInfo.TStage == "T2a" || tInfo.TStage == "T2b" || tInfo.TStage == "T2c" {
 			return true
@@ -219,7 +226,7 @@ func T2StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // T3StageAggregator collects patients with stage T3 bladder cancer.
-func T3StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func T3StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "T3" || tInfo.TStage == "T3a" || tInfo.TStage == "T3b" {
 			return true
@@ -229,7 +236,7 @@ func T3StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // T4StageAggregator collects patients with stage T4 bladder cancer.
-func T4StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func T4StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.TStage == "T4" || tInfo.TStage == "T4a" || tInfo.TStage == "T4b" {
 			return true
@@ -239,7 +246,7 @@ func T4StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // N0StageAggregator collects patients with stage N0 bladder cancer.
-func N0StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func N0StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.NStage == "N0" {
 			return true
@@ -249,7 +256,7 @@ func N0StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // N1StageAggregator collects patients with stage N1 bladder cancer.
-func N1StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func N1StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.NStage == "N1" {
 			return true
@@ -259,7 +266,7 @@ func N1StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // N2StageAggregator collects patients with stage N2 bladder cancer.
-func N2StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func N2StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.NStage == "N2" {
 			return true
@@ -269,7 +276,7 @@ func N2StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // N3StageAggregator collects patients with stage N0 bladder cancer.
-func N3StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func N3StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.NStage == "N3" {
 			return true
@@ -279,7 +286,7 @@ func N3StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // M0StageAggregator collects patients with stage M0 bladder cancer.
-func M0StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func M0StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.MStage == "M0" {
 			return true
@@ -289,7 +296,7 @@ func M0StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 }
 
 // M1StageAggregator collects patients with stage M1 bladder cancer.
-func M1StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilter {
+func M1StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 	return cancerStageAggregator(func(tInfo *TumorInfo) bool {
 		if tInfo.MStage == "M1" || tInfo.MStage == "M1a" || tInfo.MStage == "M1b" {
 			return true
@@ -300,7 +307,7 @@ func M1StageAggregator(tinfoMap map[string][]*TumorInfo) trajectory.PatientFilte
 
 // CancerTrajectoryFilter filters trajectories down to trajectories that contain at least one diagnosis code that is
 // considered to be cancer-related, e.g. containing the word "neoplasm".
-func CancerTrajectoryFilter(exp *trajectory.Experiment) trajectory.TrajectoryFilter {
+func CancerTrajectoryFilter(exp *Experiment) TrajectoryFilter {
 	//Determine all diagnosis codes that are cancer-related
 	CancerRelatedMap := map[int]bool{}
 	for did, medName := range exp.NameMap {
@@ -314,7 +321,7 @@ func CancerTrajectoryFilter(exp *trajectory.Experiment) trajectory.TrajectoryFil
 		}
 		CancerRelatedMap[did] = cancerRelated
 	}
-	return func(t *trajectory.Trajectory) bool {
+	return func(t *Trajectory) bool {
 		for _, did := range t.Diagnoses {
 			if CancerRelatedMap[did] {
 				return true
@@ -327,7 +334,7 @@ func CancerTrajectoryFilter(exp *trajectory.Experiment) trajectory.TrajectoryFil
 // BladderCancerTrajectoryFilter filters trajectories down to trajectorories with at least one diagnosis that is related
 // to bladder cancer specifically, cf. ICD10 categories C67,C77,C78,C79 or procedures such as MVAC chemo, IVT treatment,
 // or radical cystectomy.
-func BladderCancerTrajectoryFilter(exp *trajectory.Experiment) trajectory.TrajectoryFilter {
+func BladderCancerTrajectoryFilter(exp *Experiment) TrajectoryFilter {
 	//Determine all internal diagnosis codes that are bladder cancer-related
 	bladderCancerRelatedMap := map[int]bool{}
 	for did, _ := range exp.NameMap {
@@ -342,7 +349,7 @@ func BladderCancerTrajectoryFilter(exp *trajectory.Experiment) trajectory.Trajec
 			}
 		}
 	}
-	return func(t *trajectory.Trajectory) bool {
+	return func(t *Trajectory) bool {
 		for _, did := range t.Diagnoses {
 			if bladderCancerRelatedMap[did] {
 				return true
@@ -350,4 +357,141 @@ func BladderCancerTrajectoryFilter(exp *trajectory.Experiment) trajectory.Trajec
 		}
 		return false
 	}
+}
+
+func ApplyPatientFilter(filter PatientFilter, pMap *PatientMap) *PatientMap {
+	newPMap := &PatientMap{PIDStringMap: map[string]int{}, PIDMap: map[int]*Patient{}, Ctr: pMap.Ctr}
+	for pid, p := range pMap.PIDMap {
+		if filter(p) {
+			newPMap.PIDStringMap[p.PIDString] = pid
+			newPMap.PIDMap[pid] = p
+			if p.Sex == Male {
+				newPMap.MaleCtr++
+			} else {
+				newPMap.FemaleCtr++
+			}
+		}
+	}
+	return newPMap
+}
+
+func ApplyPatientFilters(filters []PatientFilter, pMap *PatientMap) *PatientMap {
+	newPMap := &PatientMap{PIDStringMap: map[string]int{}, PIDMap: map[int]*Patient{}, Ctr: pMap.Ctr}
+	for pid, p := range pMap.PIDMap {
+		res := true
+		for _, filter := range filters {
+			res = filter(p) && res
+			if !res {
+				break
+			}
+		}
+		if res {
+			newPMap.PIDStringMap[p.PIDString] = pid
+			newPMap.PIDMap[pid] = p
+			if p.Sex == Male {
+				newPMap.MaleCtr++
+			} else {
+				newPMap.FemaleCtr++
+			}
+		}
+	}
+	return newPMap
+}
+
+// SexFilter removes all patients of the given sex.
+func SexFilter(sex int) PatientFilter {
+	return func(p *Patient) bool {
+		return p.Sex != sex
+	}
+}
+
+// MaleFilter removes all male patients.
+func MaleFilter() PatientFilter {
+	return SexFilter(Male)
+}
+
+// FemaleFilter removes all female patients.
+func FemaleFilter() PatientFilter {
+	return SexFilter(Female)
+}
+
+// EOIFilter removes all diagnoses for patients that satisfy a given predicate
+func EOIFilter(test func(d1, d2 DiagnosisDate) bool) PatientFilter {
+	return func(p *Patient) bool {
+		if p.EOIDate == nil { //skip patients without EOIDate
+			return false
+		}
+		newD := []*Diagnosis{}
+		for _, d := range p.Diagnoses {
+			if test(d.Date, *p.EOIDate) {
+				break
+			}
+			newD = append(newD, d)
+		}
+		p.Diagnoses = newD
+		if newD == nil {
+			return false
+		}
+		return true
+	}
+}
+
+// EOIBeforeFilter removes all diagnoses before the event of interest date
+func EOIBeforeFilter() PatientFilter {
+	return EOIFilter(func(d1, d2 DiagnosisDate) bool { return DiagnosisDateSmallerThan(d1, d2) })
+}
+
+// EOIAfterFilter removes all diagnoses after the event of interest date
+func EOIAfterFilter() PatientFilter {
+	return EOIFilter(func(d1, d2 DiagnosisDate) bool { return DiagnosisDateSmallerThan(d2, d1) })
+}
+
+// ageLessAggregator collects all patients younger than a specific age or trims down their data up until that age.
+func ageLessAggregator(age int) PatientFilter {
+	return func(p *Patient) bool {
+		fYear := p.YOB + age - 1 // last year with diagnosis accepted
+		//remove all diagnoses past a specific age
+		newD := []*Diagnosis{}
+		for _, d := range p.Diagnoses {
+			if d.Date.Year > fYear {
+				break
+			}
+			newD = append(newD, d)
+		}
+		p.Diagnoses = newD
+		if len(newD) == 0 {
+			return false
+		}
+		return true
+	}
+}
+
+// ageAboveAggretator collects all patients older than a specific age and removes all diagnoses before that date.
+func ageAboveAggregator(age int) PatientFilter {
+	return func(p *Patient) bool {
+		mYear := p.YOB + age // min year with diagnosis accepted
+		//remove all diagnoses before a specific age
+		newD := []*Diagnosis{}
+		for _, d := range p.Diagnoses {
+			if d.Date.Year <= mYear {
+				continue
+			}
+			newD = append(newD, d)
+		}
+		p.Diagnoses = newD
+		if len(newD) == 0 {
+			return false
+		}
+		return true
+	}
+}
+
+// LessThanSeventyAggregator collects all patients below a specific age.
+func LessThanSeventyAggregator() PatientFilter {
+	return ageLessAggregator(70)
+}
+
+// AboveSeventyAggregator collects all patients above a specific age.
+func AboveSeventyAggregator() PatientFilter {
+	return ageAboveAggregator(70)
 }
