@@ -26,12 +26,10 @@ import (
 	"github.com/valyala/fastrand"
 	"io"
 	"math"
-	"math/rand"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -433,12 +431,12 @@ func patientsToIdMap(patients []*Patient) map[int]bool {
 	return pids
 }
 
-// InitializeExperimentRelativeRiskRatios computes the relative risk ratios for each possible diagnosis pair in an
+// InitRR computes the relative risk ratios for each possible diagnosis pair in an
 // experiment. It takes into account the minimum and maximum time between diagnoses (minTime and maxTime). It is an
 // iterative algorithm that runs for a given number of iterations (iter). With iter = 400, the calculated p-values are
 // within 0.05 of the true p-values and with iter = 10000 they are within 0.01 of the true p-values.
 // The relative risk ratios are calculated in parallel for all possible diagnosis pairs.
-func (exp *Experiment) InitializeExperimentRelativeRiskRatios(minTime, maxTime float64, iter int) {
+func (exp *Experiment) InitRR(minTime, maxTime float64, iter int) {
 	fmt.Println("Initializing relative risk ratios...")
 	fmt.Println("Sampling ", iter, " comparison groups for each diagnosis pair...")
 	var indexVector []int
@@ -492,7 +490,7 @@ func (exp *Experiment) InitializeExperimentRelativeRiskRatios(minTime, maxTime f
 							pval = pval / float64(iter)
 							d2CtrInNotExposedGroup = d2CtrInNotExposedGroup / iter // take the average of d2s counted in all sampled non exposed groups
 							if pval > 0.001 {
-								continue // seems that #D2 in non exposed > #D1->D2 in exposed, so unlikely D1->D2
+								continue // seems that #D2 in non-exposed > #D1->D2 in exposed, so unlikely D1->D2
 							}
 							// compute RR
 							a := float64(d2CtrInExposedGroup)
