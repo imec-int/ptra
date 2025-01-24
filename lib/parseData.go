@@ -255,7 +255,7 @@ func initializeIcd10NameMap(file string) map[string]Icd10Entry {
 // the ICD10 category description (string) onto a boolean.
 func getIcd10DescToExcludeFromAnalysis() map[string]bool {
 	exclude := map[string]bool{}
-	exclude["Pregnancy, childbirth and the puerperium (O00-O9A)"] = true
+	exclude["Pregnancy, childbirth and the puerperal (O00-O9A)"] = true
 	exclude["Certain conditions originating in the perinatal period (P00-P96)"] = true
 	exclude["Symptoms, signs and abnormal clinical and laboratory findings, not elsewhere classified (R00-R99)"] = true
 	exclude["Injury, poisoning and certain other consequences of external causes (S00-T88)"] = true

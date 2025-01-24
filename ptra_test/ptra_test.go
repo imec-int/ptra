@@ -240,12 +240,26 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	}
 	cohort := lib.MergeCohorts(cohorts)
 	cohort.Log(4)
-	//Test building trajectories
+	// Test building trajectories
 	icd10Map := map[int]lib.Icd10Entry{
-		0: {Name: "Smoking"},
-		1: {Name: "Lung cancer"},
-		2: {Name: "Drinking"},
-		3: {Name: "Liver cancer"},
+		0: {
+			Name:       "Smoking",
+			Categories: [6]string{"cat1", "cat2", "cat3", "None", "None", "None"},
+			Level:      3,
+		},
+		1: {
+			Name:       "Lung cancer",
+			Categories: [6]string{"cat1", "cat2", "None", "None", "None", "None"},
+			Level:      2,
+		},
+		2: {Name: "Drinking",
+			Categories: [6]string{"cat1", "cat2", "cat3", "cat4", "cat5", "None"},
+			Level:      5,
+		},
+		3: {Name: "Liver cancer",
+			Categories: [6]string{"cat1", "None", "None", "None", "None", "None"},
+			Level:      1,
+		},
 	}
 	exp := &lib.Experiment{
 		NofAgeGroups:      2,
