@@ -244,20 +244,20 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	icd10Map := map[int]lib.Icd10Entry{
 		0: {
 			Name:       "Smoking",
-			Categories: [6]string{"cat1", "cat2", "cat3", "None", "None", "None"},
+			Categories: [6]string{"cat1", "cat2", "cat3", "NONE", "NONE", "NONE"},
 			Level:      3,
 		},
 		1: {
 			Name:       "Lung cancer",
-			Categories: [6]string{"cat1", "cat2", "None", "None", "None", "None"},
+			Categories: [6]string{"cat1", "cat2", "NONE", "NONE", "NONE", "NONE"},
 			Level:      2,
 		},
 		2: {Name: "Drinking",
-			Categories: [6]string{"cat1", "cat2", "cat3", "cat4", "cat5", "None"},
+			Categories: [6]string{"cat1", "cat2", "cat3", "cat4", "cat5", "NONE"},
 			Level:      5,
 		},
 		3: {Name: "Liver cancer",
-			Categories: [6]string{"cat1", "None", "None", "None", "None", "None"},
+			Categories: [6]string{"cat1", "NONE", "NONE", "NONE", "NONE", "NONE"},
 			Level:      1,
 		},
 	}

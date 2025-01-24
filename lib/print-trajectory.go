@@ -148,10 +148,13 @@ func printTrajectory(trajectory Trajectory, exp Experiment, w io.Writer) {
 	for _, node := range nodes {
 		icd10 := icd10Map[node]
 		fmt.Fprintf(w, "\tnode [\n\t\tid %d\n\t\tlabel \"%s\"\n\t", node, icd10.Name)
-
+		fmt.Fprintf(w, "\tlevel %d\n", icd10.Level)
 		fmt.Fprintf(w, "\t\tcategories [\n")
 		for idx, cat := range icd10.Categories {
-			fmt.Fprintf(w, "\t\t\t\t%d \"%s\"\n", idx+1, cat)
+			if cat == "NONE" {
+				break
+			}
+			fmt.Fprintf(w, "\t\t\t\t%d \"%s\"\n", idx, cat)
 		}
 		fmt.Fprintf(w, "\t\t]\n\t]\n")
 	}
