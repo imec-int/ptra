@@ -19,6 +19,7 @@
 package lib
 
 import (
+	"slices"
 	"strings"
 )
 
@@ -310,8 +311,8 @@ func M1StageAggregator(tinfoMap map[string][]*TumorInfo) PatientFilter {
 func CancerTrajectoryFilter(exp *Experiment) TrajectoryFilter {
 	//Determine all diagnosis codes that are cancer-related
 	CancerRelatedMap := map[int]bool{}
-	for did, medName := range exp.NameMap {
-		medWords := strings.Split(medName, " ")
+	for did, icd10 := range exp.Icd10Map {
+		medWords := strings.Split(icd10.Name, " ")
 		cancerRelated := false
 		for _, word := range medWords {
 			if word == "neoplasm" || word == "Neoplasm" {
@@ -331,22 +332,23 @@ func CancerTrajectoryFilter(exp *Experiment) TrajectoryFilter {
 	}
 }
 
-// BladderCancerTrajectoryFilter filters trajectories down to trajectorories with at least one diagnosis that is related
-// to bladder cancer specifically, cf. ICD10 categories C67,C77,C78,C79 or procedures such as MVAC chemo, IVT treatment,
-// or radical cystectomy.
+// BladderCancerTrajectoryFilter filters trajectories down to trajectories with
+// at least one diagnosis that is related to bladder cancer specifically,
+// cf. ICD10 Categories C67,C77,C78,C79 or procedures such as MVAC chemo,
+// IVT treatment, or radical cystectomy.
 func BladderCancerTrajectoryFilter(exp *Experiment) TrajectoryFilter {
-	//Determine all internal diagnosis codes that are bladder cancer-related
+	// Determine all internal diagnosis codes that are bladder cancer-related
+	bladderCancerCodes := []string{
+		"C67", "C77", "C78",
+		// also check self-defined codes for treatments
+		"C79", "C98", "C99", "C100",
+	}
+
 	bladderCancerRelatedMap := map[int]bool{}
-	for did, _ := range exp.NameMap {
-		icdCode := exp.IdMap[did]
+	for did, icdCode := range exp.IdMap {
 		if len(icdCode) >= 3 {
 			subCode := icdCode[0:3]
-			if subCode == "C67" || subCode == "C77" || subCode == "C78" || subCode == "C79" || // also check self-defined codes for treatments
-				subCode == "C98" || subCode == "C99" || (len(icdCode) >= 4 && icdCode[0:4] == "C100") {
-				bladderCancerRelatedMap[did] = true
-			} else {
-				bladderCancerRelatedMap[did] = false
-			}
+			bladderCancerRelatedMap[did] = slices.Contains(bladderCancerCodes, subCode) || (len(icdCode) >= 4 && icdCode[0:4] == "C100")
 		}
 	}
 	return func(t *Trajectory) bool {

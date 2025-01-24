@@ -49,7 +49,7 @@ func AgeAtEOI(p *Patient) int {
 // * mean age + standard deviation + median age for patients in the trajectories. Patients can occur in different
 // trajectories. For mean age + sd + median, they will be counted as separate instances.
 // * #patients per age category (normalized in percentages, not absolute numbers). Patients that occr in different
-// trajectories will be counted as separate instances for these age categories.
+// trajectories will be counted as separate instances for these age Categories.
 // * #males, #females
 // * mean survival time after event of interest
 func MetricsFromTrajectories(trajectories []*Trajectory) (float64, float64, float64, float64, int, int) {
