@@ -1004,7 +1004,7 @@ func tumorIsCISStage(tumor *TumorInfo) bool {
 	return tumor.Stage == "0is"
 }
 
-// parsetTriNetXTumorData parses the tumor data from a csv file and returns a map PIDString -> []*TumorInfo.
+// ParsetTriNetXTumorData parses the tumor data from a csv file and returns a map PIDString -> []*TumorInfo.
 func ParsetTriNetXTumorData(fileName string) map[string][]*TumorInfo {
 	file, err := os.Open(fileName)
 	if err != nil {
