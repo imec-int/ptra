@@ -149,14 +149,13 @@ func printTrajectory(trajectory *Trajectory, exp *Experiment, w io.Writer) {
 		icd10 := icd10Map[node]
 		fmt.Fprintf(w, "\tnode [\n\t\tid %d\n\t\tlabel \"%s\"\n\t", node, icd10.Name)
 		fmt.Fprintf(w, "\tlevel %d\n", icd10.Level)
-		fmt.Fprintf(w, "\t\tcategories [\n")
 		for idx, cat := range icd10.Categories {
 			if cat == "NONE" {
 				break
 			}
-			fmt.Fprintf(w, "\t\t\t\t%d \"%s\"\n", idx, cat)
+			fmt.Fprintf(w, "\t\tcat%d \"%s\"\n", idx, cat)
 		}
-		fmt.Fprintf(w, "\t\t]\n\t]\n")
+		fmt.Fprintf(w, "\t]\n")
 	}
 
 	// print edges
@@ -256,9 +255,9 @@ func collectClusters(exp *Experiment) map[int][]*Trajectory {
 // - A list of medical terms for the diagnoses: term1 \tab term2 ...\tab termn.
 // - A list of patient numbers for the transitions between diagnosis pairs: nr1->2 \tab nr2->3 ...\tab nrn-1->n.
 func PrintClusteredTrajectoriesToFile(exp *Experiment, name string) {
-	//plots a line with cluster ID, trajectory ID
-	//plots a line with trajectory
-	//plots a line with trajectory labels (= nr of patients)
+	// plots a line with cluster ID, trajectory ID
+	// plots a line with trajectory
+	// plots a line with trajectory labels (= nr of patients)
 	file, err := os.Create(name)
 	if err != nil {
 		panic(err)
