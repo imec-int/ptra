@@ -65,14 +65,14 @@ func TestInitializeCohorts(t *testing.T) {
 	lib.ParseTrinetXPatientDiagnoses(file2, "", patients, analysisMaps, map[string]string{})
 	nofDiagnosisCodes := analysisMaps.NofDiagnosisCodes
 	nofRegions := 1
-	cohorts := lib.InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
+	cohorts := lib.InitCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
 	for _, cohort := range cohorts {
 		cohort.Log(18)
 	}
 	fmt.Println("Map DID -> Medical Name")
-	collected := make([][]string, len(analysisMaps.NameMap))
-	for k, v := range analysisMaps.NameMap {
-		collected[k] = append(collected[k], v)
+	collected := make([][]string, len(analysisMaps.Icd10Map))
+	for k, v := range analysisMaps.Icd10Map {
+		collected[k] = append(collected[k], v.Name)
 	}
 	for _, v := range collected {
 		fmt.Println(v)
@@ -81,7 +81,7 @@ func TestInitializeCohorts(t *testing.T) {
 		}
 	}
 	fmt.Println("Map Medical Name -> DID")
-	collected2 := make([][]string, len(analysisMaps.NameMap))
+	collected2 := make([][]string, len(analysisMaps.Icd10Map))
 	for k, v := range analysisMaps.DIDMap {
 		collected2[v] = append(collected2[v], k)
 	}
@@ -233,7 +233,7 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		MaleCtr:      ctr,
 		FemaleCtr:    0,
 	}
-	cohorts := lib.InitializeCohorts(PMap, 2, 1, 4)
+	cohorts := lib.InitCohorts(PMap, 2, 1, 4)
 	fmt.Println("Printing cohorts")
 	for _, cohort := range cohorts {
 		cohort.Log(4)
@@ -241,7 +241,12 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 	cohort := lib.MergeCohorts(cohorts)
 	cohort.Log(4)
 	//Test building trajectories
-	nameMap := map[int]string{0: "Smoking", 1: "Lung cancer", 2: "Drinking", 3: "Liver cancer"}
+	icd10Map := map[int]lib.Icd10Entry{
+		0: {Name: "Smoking"},
+		1: {Name: "Lung cancer"},
+		2: {Name: "Drinking"},
+		3: {Name: "Liver cancer"},
+	}
 	exp := &lib.Experiment{
 		NofAgeGroups:      2,
 		Level:             0,
@@ -251,7 +256,7 @@ func TestInitCohortsWithFakePatients(t *testing.T) {
 		DPatients:         cohort.DPatients,
 		Name:              "exp1",
 		Cohorts:           cohorts,
-		NameMap:           nameMap,
+		Icd10Map:          icd10Map,
 		Trajectories:      nil,
 	}
 	exp.InitRR(0.5, 5.0, 10)

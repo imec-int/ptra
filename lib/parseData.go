@@ -35,50 +35,50 @@ import (
 
 //Package ptra implements a patient trajectory analysis tool.
 //The ptra program has 3 data inputs:
-//A file mapping diagnosis ID (DID) -> medical name.
+//A file mapping diagnosis ID (DID) -> medical Name.
 //A file with patient info, associating a patient ID (PID) with YOB, sex, etc.
 //A file with diagnosis info, mapping PID -> DID, date.
 
 //TriNetX Database stores diagnoses data using a mix of ICD10 and ICD9 codes.
 //We have an additional file that maps ICD9 IDs -> ICD10 IDs.
-//We can download the ICD10 ID -> medical name from https://www.cms.gov/medicare/icd-10/2022-icd-10-cm as an xml file.
+//We can download the ICD10 ID -> medical Name from https://www.cms.gov/medicare/icd-10/2022-icd-10-cm as an xml file.
 //TriNetX stores patient info as a csv file, as well as the diagnoses info.
-//For the medical name mapping, we can also use the ICD10 -> CCSR Mapping which maps ICD10 onto 530 categories with medical meaning. This
+//For the medical Name mapping, we can also use the ICD10 -> CCSR Mapping which maps ICD10 onto 530 Categories with medical meaning. This
 //mapping can be downloaded from https://www.hcup-us.ahrq.gov/toolssoftware/ccsr/dxccsr.jsp#download as a CSV file. This
-//mapping performs a mapping ICD10 -> CCSR categories -> medical name.
+//mapping performs a mapping ICD10 -> CCSR Categories -> medical Name.
 
-//Parsing ICD10 names hierarchy from xml
-//Structs for unmarshalling ICD10 xml data
-//Structure of an ICD10 code: ABC.XYZ(D): up to 7 characters
-//The xml file structures these codes using:
-//<chapter> <section> <desc> </desc> </section> </chapter>
-//with chapter the first level of the diagnosis code (A), section the second level (D) and desc the rest (C.XYZ(D))
+// Parsing ICD10 hierarchy from xml
+// Structs for unmarshalling ICD10 xml data
+// Structure of an ICD10 code: ABC.XYZ(D): up to 7 characters
+// The xml file structures these codes using:
+// <chapter> <section> <desc> </desc> </section> </chapter>
+// with chapter the first Level of the diagnosis code (A), section the second Level (D) and desc the rest (C.XYZ(D))
 
-// diag captures the lowest levels of the ICD10 code
-type diag struct {
-	Name      string `xml:"name"` //Unique diagnosis ID (DID) in ICD10 encoding
-	Desc      string `xml:"desc"` //A medical name/description for a DID
-	Diagnoses []diag `xml:"diag"` //A diagnosis can be split into more detailed diagnoses descriptors.
+// icd10Diag captures the lowest levels of the ICD10 code (diag)
+type icd10Diag struct {
+	Name      string      `xml:"name"` //Unique diagnosis ID (DID) in ICD10 encoding
+	Desc      string      `xml:"desc"` //A medical Name/description for a DID
+	Diagnoses []icd10Diag `xml:"diag"` //A diagnosis can be split into more detailed diagnoses descriptors.
 }
 
-// section captures the second level of the ICD10 code
-type section struct {
-	Desc      string `xml:"desc"`    //A medical name/description for a DID.
-	Id        string `xml:"id,attr"` //Unique diagnosis ID (DID) in ICD10 encoding
-	Diagnoses []diag `xml:"diag"`    //A diagnosis can be split into more detailed diagnoses descriptors.
+// icd10Section captures the second Level of the ICD10 code (section)
+type icd10Section struct {
+	Desc      string      `xml:"desc"`    //A medical Name/description for a DID.
+	Id        string      `xml:"id,attr"` //Unique diagnosis ID (DID) in ICD10 encoding
+	Diagnoses []icd10Diag `xml:"diag"`    //A diagnosis can be split into more detailed diagnoses descriptors.
 }
 
-// chapter captures the first (highest) level of the ICD10 code
-type chapter struct {
-	XmlName  xml.Name  `xml:"chapter"`
-	Desc     string    `xml:"desc"`
-	Sections []section `xml:"section"`
+// icd10Chapter captures the first (highest) Level of the ICD10 code (chapter)
+type icd10Chapter struct {
+	XmlName  xml.Name       `xml:"chapter"`
+	Desc     string         `xml:"desc"`
+	Sections []icd10Section `xml:"section"`
 }
 
 // icd10Hierarchy contains the full xml table with the ICD10 code hierarchy.
 type icd10Hierarchy struct {
-	XmlName  xml.Name  `xml:"ICD10CM.tabular"`
-	Chapters []chapter `xml:"chapter"`
+	XmlName  xml.Name       `xml:"ICD10CM.tabular"`
+	Chapters []icd10Chapter `xml:"chapter"`
 }
 
 // parseIcd10HierarchyFromXML parses the xml file with the ICD10 hierarchy into an icd10Hierarchy object.
@@ -100,45 +100,45 @@ func parseIcd10HierarchyFromXml(file string) icd10Hierarchy {
 // printIcd10Hierarchy prints an ICD10 hierarchy parsed from an XML file.
 func printIcd10Hierarchy(hierarchy icd10Hierarchy) {
 	fmt.Println("Printing ICD10 code hierarchy.")
-	// count # DID per level
+	// count # DID per Level
 	ctr1, ctr2, ctr3, ctr4, ctr5, ctr6, ctr7 := 0, 0, 0, 0, 0, 0, 0
 	for _, chap := range hierarchy.Chapters {
-		// level 1
+		// Level 1
 		ctr1++
 		fmt.Println("Chapter: ", chap.Desc)
 		for _, section := range chap.Sections {
-			// level 2
+			// Level 2
 			ctr2++
 			fmt.Println("Section: ", section.Desc)
 			for _, diag := range section.Diagnoses {
-				// level 3
+				// Level 3
 				ctr3++
 				fmt.Println(diag.Name, " : ", diag.Desc)
 				if len(diag.Diagnoses) == 0 {
 					continue
 				}
 				for _, diag := range diag.Diagnoses {
-					// level 4
+					// Level 4
 					ctr4++
 					fmt.Println(diag.Name, " : ", diag.Desc)
 					if len(diag.Diagnoses) == 0 {
 						continue
 					}
 					for _, diag := range diag.Diagnoses {
-						// level 5
+						// Level 5
 						ctr5++
 						fmt.Println(diag.Name, " : ", diag.Desc)
 						if len(diag.Diagnoses) == 0 {
 							continue
 						}
 						for _, diag := range diag.Diagnoses {
-							// level 6
+							// Level 6
 							ctr6++
 							fmt.Println(diag.Name, " : ", diag.Desc)
 							if len(diag.Diagnoses) == 0 {
 								continue
 							}
-							// level 7
+							// Level 7
 							ctr7++
 							fmt.Println(diag.Name, " : ", diag.Desc)
 						}
@@ -147,43 +147,43 @@ func printIcd10Hierarchy(hierarchy icd10Hierarchy) {
 			}
 		}
 	}
-	fmt.Println("#ICD10 codes/descriptors per level: ")
+	fmt.Println("#ICD10 codes/descriptors per Level: ")
 	fmt.Println("Lvl 0: ", ctr1, " Lvl 1: ", ctr2, " Lvl 2: ",
 		ctr3, " Lvl 3: ", ctr4, " Lvl 4: ", ctr5, " Lvl 5: ", ctr6, " Lvl 6: ", ctr7)
 }
 
-//The ptra program needs a names map that maps DID -> medical name. The following code extracts a name map from an ICD10
-//hierarchy and a given level.
+//The ptra program needs a names map that maps DID -> medical Name. The following code extracts a Name map from an ICD10
+//hierarchy and a given Level.
 
-// icd10Name is a struct for containing a medical name + level + the categories of a DID in ICD10 encoding.
-type icd10Name struct {
-	name       string    //medical name for a DID in ICD10 encoding
-	categories [6]string //the names of the ICD10 encoding higher and lower in the hierarchy.
-	level      int       //the ICD10 hierarchy level of this name.
+// Icd10Entry is a struct for containing a medical Name + Level + the Categories of a DID in ICD10 encoding.
+type Icd10Entry struct {
+	Name       string    // medical Name for a DID in ICD10 encoding
+	Categories [6]string // the names of the ICD10 encoding higher and lower in the hierarchy.
+	Level      int       // the ICD10 hierarchy Level of this Name.
 }
 
 type icd10Table struct {
-	namesMap map[string]icd10Name //maps ICD10 DID to a medical name, level, and categories to which it belongs.
+	namesMap map[string]Icd10Entry //maps ICD10 DID to a medical Name, Level, and Categories to which it belongs.
 }
 
-// selectParentCategory returns the ICD10 name of the parent category to which a DID belongs.
-func selectParentCategory(name icd10Name) string {
-	if name.level > 0 {
-		return name.categories[name.level-1]
+// selectParentCategory returns the ICD10 Name of the parent category to which a DID belongs.
+func selectParentCategory(name Icd10Entry) string {
+	if name.Level > 0 {
+		return name.Categories[name.Level-1]
 	}
 	return "None"
 }
 
-func printIcd10NameMap(table map[string]icd10Name) {
+func printIcd10NameMap(table map[string]Icd10Entry) {
 	fmt.Println("ICD10 Name map: ")
 	for id, name := range table {
 		fmt.Println(id, " : ", name)
 	}
 }
 
-// initializeIcd10NameMap initializes a name map for ICD10 DID -> medical name, level, and categories it belongs to.
-func initializeIcd10NameMap(file string) map[string]icd10Name {
-	icd10NameMap := map[string]icd10Name{} // maps ICD10 DID to a medical name, level, and categories to which it belongs.
+// initializeIcd10NameMap initializes a Name map for ICD10 DID -> medical Name, Level, and Categories it belongs to.
+func initializeIcd10NameMap(file string) map[string]Icd10Entry {
+	icd10Map := map[string]Icd10Entry{} // maps ICD10 DID to a medical Name, Level, and Categories to which it belongs.
 	icd10Hierarchy := parseIcd10HierarchyFromXml(file)
 	for _, chap := range icd10Hierarchy.Chapters {
 		category0 := chap.Desc
@@ -192,44 +192,55 @@ func initializeIcd10NameMap(file string) map[string]icd10Name {
 			// manually unrolled loop since we know hierarchy is max 7 levels, otherwise recursive code
 			for _, diag := range section.Diagnoses {
 				if len(diag.Diagnoses) == 0 {
-					icd10Name := icd10Name{name: diag.Desc,
-						categories: [6]string{category0, category1, "NONE", "NONE", "NONE", "NONE"}, level: 2}
-					icd10NameMap[diag.Name] = icd10Name
+					icd10Name := Icd10Entry{
+						Name:       diag.Desc,
+						Categories: [6]string{category0, category1, "NONE", "NONE", "NONE", "NONE"},
+						Level:      2,
+					}
+					icd10Map[diag.Name] = icd10Name
 					continue
 				}
 				category2 := diag.Desc
 				for _, diag := range diag.Diagnoses {
 					if len(diag.Diagnoses) == 0 {
-						icd10Name := icd10Name{name: diag.Desc,
-							categories: [6]string{category0, category1, category2, "NONE", "NONE", "NONE"},
-							level:      3}
-						icd10NameMap[diag.Name] = icd10Name
+						icd10Name := Icd10Entry{
+							Name:       diag.Desc,
+							Categories: [6]string{category0, category1, category2, "NONE", "NONE", "NONE"},
+							Level:      3,
+						}
+						icd10Map[diag.Name] = icd10Name
 						continue
 					}
 					category3 := diag.Desc
 					for _, diag := range diag.Diagnoses {
 						if len(diag.Diagnoses) == 0 {
-							ICD10Name := icd10Name{name: diag.Desc,
-								categories: [6]string{category0, category1, category2, category3, "NONE", "NONE"},
-								level:      4}
-							icd10NameMap[diag.Name] = ICD10Name
+							ICD10Name := Icd10Entry{
+								Name:       diag.Desc,
+								Categories: [6]string{category0, category1, category2, category3, "NONE", "NONE"},
+								Level:      4,
+							}
+							icd10Map[diag.Name] = ICD10Name
 							continue
 						}
 						category4 := diag.Desc
 						for _, diag := range diag.Diagnoses {
 							if len(diag.Diagnoses) == 0 {
-								ICD10Name := icd10Name{name: diag.Desc,
-									categories: [6]string{category0, category1, category2, category3, category4, "NONE"},
-									level:      5}
-								icd10NameMap[diag.Name] = ICD10Name
+								ICD10Name := Icd10Entry{
+									Name:       diag.Desc,
+									Categories: [6]string{category0, category1, category2, category3, category4, "NONE"},
+									Level:      5,
+								}
+								icd10Map[diag.Name] = ICD10Name
 								continue
 							}
 							category5 := diag.Desc
 							for _, diag := range diag.Diagnoses {
-								ICD10Name := icd10Name{name: diag.Desc,
-									categories: [6]string{category0, category1, category2, category3, category4, category5},
-									level:      6}
-								icd10NameMap[diag.Name] = ICD10Name
+								ICD10Name := Icd10Entry{
+									Name:       diag.Desc,
+									Categories: [6]string{category0, category1, category2, category3, category4, category5},
+									Level:      6,
+								}
+								icd10Map[diag.Name] = ICD10Name
 							}
 						}
 					}
@@ -237,10 +248,10 @@ func initializeIcd10NameMap(file string) map[string]icd10Name {
 			}
 		}
 	}
-	return icd10NameMap
+	return icd10Map
 }
 
-// getIcd10DescToExcludeFromAnalysis returns a map that lists ICD10 categories to be excluded from analysis by mapping
+// getIcd10DescToExcludeFromAnalysis returns a map that lists ICD10 Categories to be excluded from analysis by mapping
 // the ICD10 category description (string) onto a boolean.
 func getIcd10DescToExcludeFromAnalysis() map[string]bool {
 	exclude := map[string]bool{}
@@ -280,46 +291,46 @@ func getNonICD10CodesToAddToAnalysis() map[string]string {
 	}
 }
 
-// initializeIcd10AnalysisIDMap creates a map ICD10 DID -> analysis DID and a map analysis ID -> medical name. This is
-// useful to remap diagnosis codes used in the input to a higher level in the ICD10 hierarchy. E.g "typhoid fever" and
+// initializeIcd10AnalysisIDMap creates a map ICD10 DID -> analysis DID and a map analysis ID -> medical Name. This is
+// useful to remap diagnosis codes used in the input to a higher Level in the ICD10 hierarchy. E.g "typhoid fever" and
 // "cholera" are both "infectious intestinal diseases", so they could both be identified as such during the analysis.
 // This can be interesting to obtain more global patient trajectories/clusters.
-func initializeIcd10AnalysisMaps(icd10NameMap map[string]icd10Name, level int) (map[string]int, map[int]string, int) {
+func initializeIcd10AnalysisMaps(icd10Map map[string]Icd10Entry, level int) (map[string]int, map[int]Icd10Entry, int) {
 	analysisIdMap := map[string]int{}                     // maps icd 10 code to analysis ID
-	analysisNameMap := map[int]string{}                   // maps analysis ID to a medical name
-	nameToAnalysisIdMap := map[string]int{}               // maps medical name to analysis ID
+	analysisIcd10Map := map[int]Icd10Entry{}              // maps analysis ID to an Icd10Entry
+	nameToAnalysisIdMap := map[string]int{}               // maps medical Name to analysis ID
 	ctr := 0                                              //serves as analysis ID generator
-	icd10ToExclude := getIcd10DescToExcludeFromAnalysis() // a list of level 0 categories to exclude from analysis
-	for icd10Code, icd10Name := range icd10NameMap {
-		if _, ok := icd10ToExclude[icd10Name.categories[0]]; ok {
+	icd10ToExclude := getIcd10DescToExcludeFromAnalysis() // a list of Level 0 Categories to exclude from analysis
+	for icd10Code, icd10 := range icd10Map {
+		if _, ok := icd10ToExclude[icd10.Categories[0]]; ok {
 			// code to exclude from analysis
 			continue
 		}
 		var name string
-		if level >= icd10Name.level {
-			name = icd10Name.name
+		if level >= icd10.Level {
+			name = icd10.Name
 		} else {
-			name = icd10Name.categories[level]
+			name = icd10.Categories[level]
 		}
-		// may already have seen name, because of level
+		// may already have seen Name, because of Level
 		newID, ok := nameToAnalysisIdMap[name]
 		if !ok {
 			newID = ctr
 			ctr++
-			analysisNameMap[newID] = name
+			analysisIcd10Map[newID] = icd10
 			nameToAnalysisIdMap[name] = newID
 		}
 		analysisIdMap[icd10Code] = newID
 	}
 	extra := getNonICD10CodesToAddToAnalysis()
 	for code, name := range extra {
-		analysisNameMap[ctr] = name
+		analysisIcd10Map[ctr] = Icd10Entry{Name: name}
 		nameToAnalysisIdMap[name] = ctr
 		analysisIdMap[code] = ctr
 		ctr++
 	}
-	fmt.Println("Mapped ", len(icd10NameMap), " ICD10 codes to ", ctr, " analysis IDs of level ", level)
-	return analysisIdMap, analysisNameMap, ctr
+	fmt.Println("Mapped ", len(icd10Map), " ICD10 codes to ", ctr, " analysis IDs of Level ", level)
+	return analysisIdMap, analysisIcd10Map, ctr
 }
 
 // ccsrCategory is a struct for containing CCSR categories, encoding medically meaningful names for a DID in ICD10
@@ -330,7 +341,7 @@ type ccsrCategory struct {
 	categories map[string]string //Up to 6 different CCSR categories an ICD10 code is mapped to
 }
 
-type icd10ToCCSRTable map[string]ccsrCategory //maps ICD10 DID to its CCSR categories
+type icd10ToCCSRTable map[string]ccsrCategory //maps ICD10 DID to its CCSR Categories
 
 // ccsrIcd10ToProperIcd10 transforms the ICD10 code from a ccsr file into a proper ICD10 code. The ICD10 codes in the
 // ccsr file are stored without the ".", so this needs to be added to be able to compare to any other data that uses
@@ -339,7 +350,7 @@ func ccsrIcd10ToProperIcd10(code string) string {
 	return code[1:4] + "." + code[4:len(code)-1]
 }
 
-// initializeIcd10NameMapFromCCSR initializes a name map for ICD10 DID -> CCSR categories (medical names)
+// initializeIcd10NameMapFromCCSR initializes a Name map for ICD10 DID -> CCSR Categories (medical names)
 func initializeIcd10ToCCSRMap(file string) map[string]ccsrCategory {
 	//map to collect data
 	icd10ToCCSRTable := map[string]ccsrCategory{}
@@ -372,7 +383,7 @@ func initializeIcd10ToCCSRMap(file string) map[string]ccsrCategory {
 		}
 		//create CSSR category, set default category
 		category := ccsrCategory{name: record[2], id: record[3], categories: map[string]string{}}
-		//fill in unique CSSR alternative categories, up to 6 possible
+		//fill in unique CSSR alternative Categories, up to 6 possible
 		for i := 6; i <= 17; i = i + 2 {
 			catID := record[i]
 			catName := record[i+1]
@@ -403,13 +414,13 @@ func printIcd10ToCCSRTable(tab map[string]ccsrCategory) {
 	}
 }
 
-// initializeIcd10AnalysisMapsCCSR creates a map ICD10 DID -> [analysis DID] and a map analysis ID -> medical name,
-// starting from a CCSR mapping, which maps ICD10 codes onto medical meaningful categories.
-// Each icd10 code can be mapped to multiple ccsr categories, and therefore to multiple analysis IDs.
+// initializeIcd10AnalysisMapsCCSR creates a map ICD10 DID -> [analysis DID] and a map analysis ID -> medical Name,
+// starting from a CCSR mapping, which maps ICD10 codes onto medical meaningful Categories.
+// Each icd10 code can be mapped to multiple ccsr Categories, and therefore to multiple analysis IDs.
 // TO DO: exclude specific ICD10 codes from the analysis.
-func initializeIcd10AnalysisMapsCCSR(icd10ToCssrMap map[string]ccsrCategory) (map[string][]int, map[int]string, int) {
-	analysisIdMap := map[string][]int{} // maps icd 10 code to analysis IDs
-	analysisNameMap := map[int]string{} // maps analysis ID to a medical name
+func initializeIcd10AnalysisMapsCCSR(icd10ToCssrMap map[string]ccsrCategory) (map[string][]int, map[int]Icd10Entry, int) {
+	analysisIdMap := map[string][]int{}      // maps icd 10 code to analysis IDs
+	analysisIcd10Map := map[int]Icd10Entry{} // maps analysis ID to a medical Name
 	ccsrIDMap := map[string]int{}
 	ctr := 0 //serves as analysis ID generator
 	icd10ToExclude := getIcd10CodesToExcludeFromAnalysis()
@@ -417,13 +428,13 @@ func initializeIcd10AnalysisMapsCCSR(icd10ToCssrMap map[string]ccsrCategory) (ma
 		if _, ok := icd10ToExclude[icd10Code[0:1]]; ok {
 			continue
 		}
-		ids := []int{}
+		var ids []int
 		for id, name := range ccsr.categories {
 			var ccsrID int
 			var ok bool
 			if ccsrID, ok = ccsrIDMap[id]; !ok {
 				ccsrID = ctr
-				analysisNameMap[ctr] = name
+				analysisIcd10Map[ctr] = Icd10Entry{Name: name}
 				ccsrIDMap[id] = ccsrID
 				ctr++
 			}
@@ -433,24 +444,24 @@ func initializeIcd10AnalysisMapsCCSR(icd10ToCssrMap map[string]ccsrCategory) (ma
 	}
 	extra := getNonICD10CodesToAddToAnalysis()
 	for code, name := range extra {
-		analysisNameMap[ctr] = name
+		analysisIcd10Map[ctr] = Icd10Entry{Name: name}
 		analysisIdMap[code] = []int{ctr}
 		ctr++
 	}
 	fmt.Println("Mapped ", len(icd10ToCssrMap), " ICD10 codes to ", ctr, " analysis IDs")
-	return analysisIdMap, analysisNameMap, ctr
+	return analysisIdMap, analysisIcd10Map, ctr
 }
 
 type icd10AnalysisMapsFromCCSR struct {
-	NameMap           map[int]string   // map analysis DID -> medical name
-	NofDiagnosisCodes int              // nr of different diagnosis codes
-	DIDMap            map[string][]int // maps ICD10 Code onto multiple DIDs
+	Icd10Map          map[int]Icd10Entry // map analysis DID -> Icd10Entry
+	NofDiagnosisCodes int                // nr of different diagnosis codes
+	DIDMap            map[string][]int   // maps ICD10 Code onto multiple DIDs
 }
 
 type icd10AnalysisMapsFromXML struct {
-	NameMap           map[int]string // map analysis DID -> medical name
-	NofDiagnosisCodes int            // nr of different diagnosis codes
-	DIDMap            map[string]int // map ICD10 Code -> DID
+	Icd10Map          map[int]Icd10Entry // map analysis DID -> Icd10Entry
+	NofDiagnosisCodes int                // nr of different diagnosis codes
+	DIDMap            map[string]int     // map ICD10 Code -> DID
 }
 
 func (analysisMap icd10AnalysisMapsFromXML) getDID(icd10DID string) int {
@@ -593,19 +604,19 @@ func (analysisMap icd10AnalysisMapsFromCCSR) fillInNonICDPatientDiagnoses(patien
 }
 
 // initializeIcd10AnalysisMaps returns a map ICD10 DID -> internal analysis DID and a map analysis DID ->
-// medical name for an ICD10 Hierarchy passed as xml file and a requested hierarchy level.
+// medical Name for an ICD10 Hierarchy passed as xml file and a requested hierarchy Level.
 func initializeIcd10AnalysisMapsFromXML(file string, level int) icd10AnalysisMapsFromXML {
-	icd10NameMapFromXml := initializeIcd10NameMap(file) // map ICD10 DID -> ICD 10 Name (medical desc, categories, level)
-	analysisIdMap, analysisNameMap, ctr := initializeIcd10AnalysisMaps(icd10NameMapFromXml, level)
-	return icd10AnalysisMapsFromXML{DIDMap: analysisIdMap, NameMap: analysisNameMap, NofDiagnosisCodes: ctr}
+	icd10MapFromXml := initializeIcd10NameMap(file) // map ICD10 DID -> ICD 10 Name (medical desc, Categories, Level)
+	analysisIdMap, icd10Map, ctr := initializeIcd10AnalysisMaps(icd10MapFromXml, level)
+	return icd10AnalysisMapsFromXML{DIDMap: analysisIdMap, Icd10Map: icd10Map, NofDiagnosisCodes: ctr}
 }
 
 // initializeIcd10AnalysisMapsFromCCSR returns a map ICD10 -> []{internal analysis DID} and map analysis DID -> medical
-// name for ICD10 CCSR categorization passed as a csv file.
+// Name for ICD10 CCSR categorization passed as a csv file.
 func initializeIcd10AnalysisMapsFromCCSR(file string) icd10AnalysisMapsFromCCSR {
 	icd10ToCssrMap := initializeIcd10ToCCSRMap(file) // map ICD10 Code -> CCSR Name
-	analysisIdMap, analysisNameMap, ctr := initializeIcd10AnalysisMapsCCSR(icd10ToCssrMap)
-	return icd10AnalysisMapsFromCCSR{DIDMap: analysisIdMap, NameMap: analysisNameMap, NofDiagnosisCodes: ctr}
+	analysisIdMap, icd10Map, ctr := initializeIcd10AnalysisMapsCCSR(icd10ToCssrMap)
+	return icd10AnalysisMapsFromCCSR{DIDMap: analysisIdMap, Icd10Map: icd10Map, NofDiagnosisCodes: ctr}
 }
 
 //Parsing patient information.
@@ -880,20 +891,20 @@ func ParseTriNetXData(name, patientFile, diagnosisFile, diagnosisInfoFile, treat
 	// fill in icd10 to analysis map
 	var analysisMaps AnalysisMaps
 	var nofDiagnosisCodes int
-	var nameMap map[int]string
+	var icd10Map map[int]Icd10Entry
 	var idMap map[int]string
 	if filepath.Ext(diagnosisInfoFile) == ".xml" {
 		maps := initializeIcd10AnalysisMapsFromXML(diagnosisInfoFile, level)
 		analysisMaps = maps
 		nofDiagnosisCodes = maps.NofDiagnosisCodes
-		nameMap = maps.NameMap
+		icd10Map = maps.Icd10Map
 		idMap = maps.getIdMap()
 	}
 	if filepath.Ext(diagnosisInfoFile) == ".csv" || filepath.Ext(diagnosisInfoFile) == ".CSV" {
 		maps := initializeIcd10AnalysisMapsFromCCSR(diagnosisInfoFile)
 		analysisMaps = maps
 		nofDiagnosisCodes = maps.NofDiagnosisCodes
-		nameMap = maps.NameMap
+		icd10Map = maps.Icd10Map
 		idMap = maps.getIdMap()
 	}
 	icd9ToIcd10Map := map[string]string{}
@@ -906,7 +917,7 @@ func ParseTriNetXData(name, patientFile, diagnosisFile, diagnosisInfoFile, treat
 	patients = ApplyPatientFilters(filters, patients)
 	fmt.Println("Filtered down to: ", len(patients.PIDMap), " patients.")
 	// create cohorts
-	cohorts := InitializeCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
+	cohorts := InitCohorts(patients, nofCohortAges, nofRegions, nofDiagnosisCodes)
 	mergedCohort := MergeCohorts(cohorts)
 	exp := Experiment{
 		NofAgeGroups:      nofCohortAges,
@@ -917,7 +928,7 @@ func ParseTriNetXData(name, patientFile, diagnosisFile, diagnosisInfoFile, treat
 		DPatients:         mergedCohort.DPatients,
 		Cohorts:           cohorts,
 		Name:              name,
-		NameMap:           nameMap,
+		Icd10Map:          icd10Map,
 		NofRegions:        nofRegions,
 		IdMap:             idMap,
 		FCtr:              patients.FemaleCtr,
@@ -948,7 +959,7 @@ type TumorInfo struct {
 	Date                          DiagnosisDate
 }
 
-// getTumorStage converts tumor size, number of lymph nodes, and metastatis level into an overall cancer stage.
+// getTumorStage converts tumor size, number of lymph nodes, and metastatis Level into an overall cancer stage.
 // T stages: Ta,T1,Tis,T2,T3,T4
 // N stages: N0,N1,N2,N3
 // M stages: M0,M1

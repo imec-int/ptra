@@ -33,7 +33,7 @@ import (
 func LogTrajectory(t *Trajectory, exp *Experiment) {
 	j := 0
 	for i, d := range t.Diagnoses {
-		dName := exp.NameMap[d]
+		dName := exp.Icd10Map[d].Name
 		fmt.Print(dName)
 		if i != len(t.Diagnoses)-1 {
 			fmt.Print(" -- ", t.PatientNumbers[j], " --> ")
@@ -47,7 +47,7 @@ func LogTrajectory(t *Trajectory, exp *Experiment) {
 // prints two lines. A first line is a list of medical terms for diagnoses in the trajectory (in order of occurrence):
 // term1 tab term2 tab ... termn. The second line lists the number of patients for each transition in the trajectory:
 // nr1->2 tab nr2->3 tab ... nrn-1->n.
-func printTrajectoriesToTabFile(trajectories []*Trajectory, nameMap map[int]string, name string) {
+func printTrajectoriesToTabFile(trajectories []*Trajectory, icd10Map map[int]Icd10Entry, name string) {
 	file, err := os.Create(name)
 	if err != nil {
 		panic(err)
@@ -63,9 +63,9 @@ func printTrajectoriesToTabFile(trajectories []*Trajectory, nameMap map[int]stri
 		var line string
 		for i, node := range nodes {
 			if i < len(nodes)-1 {
-				line = fmt.Sprintf("%s%s\t", line, nameMap[node])
+				line = fmt.Sprintf("%s%s\t", line, icd10Map[node].Name)
 			} else {
-				line = fmt.Sprintf("%s%s\n", line, nameMap[node])
+				line = fmt.Sprintf("%s%s\n", line, icd10Map[node].Name)
 			}
 		}
 		fmt.Fprintf(file, line)
@@ -96,7 +96,7 @@ func printPairsToTabFile(exp *Experiment, name string) {
 		}
 	}()
 	for _, pair := range pairs {
-		fmt.Fprintf(file, "%s\t%s\t%s\n", exp.NameMap[pair.First], exp.NameMap[pair.Second],
+		fmt.Fprintf(file, "%s\t%s\t%s\n", exp.Icd10Map[pair.First].Name, exp.Icd10Map[pair.Second].Name,
 			strconv.FormatFloat(exp.DxDRR[pair.First][pair.Second], 'E', -1, 64))
 	}
 }
@@ -141,12 +141,14 @@ func printTrajectory(trajectory Trajectory, exp Experiment, w io.Writer) {
 	TID := trajectory.ID
 	nodes := trajectory.Diagnoses
 	edges := trajectory.Diagnoses
-	nameMap := exp.NameMap
+	icd10Map := exp.Icd10Map
 	d1 := trajectory.Diagnoses[0]
 
 	// print nodes
 	for _, node := range nodes {
-		fmt.Fprintf(w, "\tnode [\n\t\tid %d\n\t\tlabel \"%s\"\n\t]\n", node, nameMap[node])
+		icd10 := icd10Map[node]
+		fmt.Fprintf(w, "\tnode [\n\t\tid %d\n\t\tlabel \"%s\"\n\t]\n", node, icd10.Name)
+		// TODO: add more info from icd10
 	}
 
 	// print edges
@@ -220,7 +222,7 @@ func (exp *Experiment) PrintTrajectoriesToFile(path string) {
 	// create a file that just has each trajectory as a tab seperated list of disease codes
 	os.Mkdir(path, 0700)
 	tabFileName := filepath.Join(path, fmt.Sprintf("%s-trajectories.tab", exp.Name))
-	printTrajectoriesToTabFile(exp.Trajectories, exp.NameMap, tabFileName)
+	printTrajectoriesToTabFile(exp.Trajectories, exp.Icd10Map, tabFileName)
 	tabFileName2 := filepath.Join(path, fmt.Sprintf("%s-pairs.tab", exp.Name))
 	printPairsToTabFile(exp, tabFileName2)
 	graphFileName := filepath.Join(path, fmt.Sprintf("%s-trajectories-merged-graph.gml", exp.Name))
@@ -283,11 +285,12 @@ func PrintClusteredTrajectoriesToFile(exp *Experiment, name string) {
 			line = ""
 			// print trajectory
 			for i, node := range nodes {
-				if i < len(nodes)-1 {
-					line = fmt.Sprintf("%s%s\t", line, exp.NameMap[node])
-				} else {
-					line = fmt.Sprintf("%s%s\n", line, exp.NameMap[node])
+				separator := "\t"
+				if i == len(nodes)-1 {
+					separator = "\n"
 				}
+				line += fmt.Sprintf("%s%s", exp.Icd10Map[node].Name, separator)
+
 			}
 			fmt.Fprintf(file, line)
 			line = ""

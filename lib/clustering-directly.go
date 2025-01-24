@@ -222,7 +222,8 @@ func convertToGml(exp *Experiment, input, output string) {
 		for _, t := range collected {
 			for _, node := range t.Diagnoses {
 				if _, ok := nodePrinted[node]; !ok {
-					fmt.Fprintf(ofile, fmt.Sprintf("\tnode [\n\t\tid %d\n\t\tlabel\"%s\"\n\t]\n", node, exp.NameMap[node]))
+					icd10 := exp.Icd10Map[node]
+					fmt.Fprintf(ofile, fmt.Sprintf("\tnode [\n\t\tid %d\n\t\tlabel\"%s\"\n\t]\n", node, icd10.Name))
 					nodePrinted[node] = true
 				}
 			}

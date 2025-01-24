@@ -49,15 +49,15 @@ const (
 
 // Patient represents patient information.
 type Patient struct {
-	PID       int            //analysis ID
-	PIDString string         //ID from TriNetX
-	YOB       int            //year of birth
-	CohortAge int            //age range a patient belongs to
-	Sex       int            //0 = male, 1 = female
-	Diagnoses []*Diagnosis   //list of patient's diagnoses, sorted by date <, unique diagnosis per date
-	EOIDate   *DiagnosisDate //Event of interest date, e.g. day of cancer diagnosis
-	DeathDate *DiagnosisDate //Date of death
-	Region    int            //Region where the patient lives
+	PID       int            // analysis ID
+	PIDString string         // ID from TriNetX
+	YOB       int            // year of birth
+	CohortAge int            // age range a patient belongs to
+	Sex       int            // 0 = male, 1 = female
+	Diagnoses []*Diagnosis   // list of patient's diagnoses, sorted by date <, unique diagnosis per date
+	EOIDate   *DiagnosisDate // Event of interest date, e.g. day of cancer diagnosis
+	DeathDate *DiagnosisDate // Date of death
+	Region    int            // Region where the patient lives
 }
 
 // AppendPatient appends a patient to a slice of patients, unless that patient is already a member of that slice.
@@ -122,6 +122,7 @@ func DiagnosisDateToFloat(d DiagnosisDate) float64 {
 type Diagnosis struct {
 	PID, DID int
 	Date     DiagnosisDate
+	Icd10    Icd10Entry
 }
 
 // AddDiagnosis appends a diagnosis to a patient's list of diagnoses.
@@ -215,8 +216,8 @@ func MakeDxDRR(size int) [][]float64 {
 // diagnosis pair.
 func MakeDxDPatients(size int) [][][]*Patient {
 	DxDPatients := make([][][]*Patient, size)
-	for i := range DxDPatients {
-		DxDPatients[i] = make([][]*Patient, size)
+	for idx := range DxDPatients {
+		DxDPatients[idx] = make([][]*Patient, size)
 	}
 	return DxDPatients
 }
@@ -224,16 +225,16 @@ func MakeDxDPatients(size int) [][][]*Patient {
 // Experiment contains the inputs and outputs for calculating diagnosis trajectories for a specific patient population.
 type Experiment struct {
 	NofAgeGroups, NofRegions, Level, NofDiagnosisCodes int
-	DxDRR                                              [][]float64    // per disease pair, relative risk score (RR)
-	DxDPatients                                        [][][]*Patient // per disease pair, all patients diagnosed
-	DPatients                                          [][]*Patient   // per disease, all patients diagnosed
-	Cohorts                                            []*Cohort      // cohorts in the experiment
-	Name                                               string         // name of the experiment, for printing
-	NameMap                                            map[int]string // maps diagnosis ID to medical name
-	Trajectories                                       []*Trajectory  // a list of computed trajectories
-	Pairs                                              []*Pair        // a list of all selected pairs that are used to compute trajectories
-	IdMap                                              map[int]string // maps the analysis DID to the original diagnostic ID used in the input data
-	MCtr, FCtr                                         int            // counters for counting nr of males,females,patients
+	DxDRR                                              [][]float64        // per disease pair, relative risk score (RR)
+	DxDPatients                                        [][][]*Patient     // per disease pair, all patients diagnosed
+	DPatients                                          [][]*Patient       // per disease, all patients diagnosed
+	Cohorts                                            []*Cohort          // cohorts in the experiment
+	Name                                               string             // Name of the experiment, for printing
+	Icd10Map                                           map[int]Icd10Entry // maps diagnosis ID to Icd10Entry
+	Trajectories                                       []*Trajectory      // a list of computed trajectories
+	Pairs                                              []*Pair            // a list of all selected pairs that are used to compute trajectories
+	IdMap                                              map[int]string     // maps the analysis DID to the original diagnostic ID used in the input data
+	MCtr, FCtr                                         int                // counters for counting nr of males,females,patients
 }
 
 // selectCohort returns from a list of cohorts a cohort that matches a specific age group, sex, and region.
@@ -260,15 +261,23 @@ func makeCohorts(nofAgeGroups, nofRegions, nofDiagnoses int) []*Cohort {
 	region := 0
 	femaleCohortIndex := int(math.Floor(float64(nofCohorts / 2)))
 	for i := 0; i < nofCohorts; i++ {
-		//first fill in male cohorts, then female cohorts
-		//check if need to switch to filling in female cohorts
+		// first fill in male cohorts, then female cohorts
+		// check if need to switch to filling in female cohorts
 		if i >= femaleCohortIndex && sex != Female {
 			sex = Female
 			ageGroup = 0
 			region = 0
 		}
-		cohort := &Cohort{AgeGroup: ageGroup, Sex: sex, NofPatients: 0, NofDiagnoses: 0, Region: region,
-			DCtr: make([]int, nofDiagnoses), DPatients: make([][]*Patient, nofDiagnoses), Patients: []*Patient{}}
+		cohort := &Cohort{
+			AgeGroup:     ageGroup,
+			Sex:          sex,
+			NofPatients:  0,
+			NofDiagnoses: 0,
+			Region:       region,
+			DCtr:         make([]int, nofDiagnoses),
+			DPatients:    make([][]*Patient, nofDiagnoses),
+			Patients:     []*Patient{},
+		}
 		cohorts[i] = cohort
 		if ageGroup == nofAgeGroups-1 { //switch to next region
 			ageGroup = 0
@@ -280,8 +289,8 @@ func makeCohorts(nofAgeGroups, nofRegions, nofDiagnoses int) []*Cohort {
 	return cohorts
 }
 
-// InitializeCohorts creates cohorts + initializes them with the counts for each diagnosis + patients per diagnosis
-func InitializeCohorts(patients *PatientMap, nofAgegroups, nofRegions, nofDiagnosisCodes int) []*Cohort {
+// InitCohorts creates cohorts + initializes them with the counts for each diagnosis + patients per diagnosis
+func InitCohorts(patients *PatientMap, nofAgegroups, nofRegions, nofDiagnosisCodes int) []*Cohort {
 	fmt.Println("Initializing cohorts: with ", len(patients.PIDMap), " patients (Males: ", patients.MaleCtr, ""+
 		"Females: ", patients.FemaleCtr, ") "+
 		" nr of diagnosis codes: ", nofDiagnosisCodes, "nr of age groups: ", nofAgegroups)
@@ -524,10 +533,10 @@ func (exp *Experiment) InitRR(minTime, maxTime float64, iter int) {
 // LoadRRMatrix loads an RR matrix from file and stores it in the given experiment. This file was created from a
 // previous run. This can be used instead of initializeRelativeRiskRatiosParallel
 func (exp *Experiment) LoadRRMatrix(path string) {
-	//reverse the exp name map
-	nameMapReversed := map[string]int{}
-	for i, name := range exp.NameMap {
-		nameMapReversed[name] = i
+	// map icd10 names to DIDs
+	nameMap := map[string]int{}
+	for did, icd10 := range exp.Icd10Map {
+		nameMap[icd10.Name] = did
 	}
 	file, err := os.Open(path)
 	if err != nil {
@@ -548,8 +557,8 @@ func (exp *Experiment) LoadRRMatrix(path string) {
 		if err != nil {
 			panic(err)
 		}
-		d1 := nameMapReversed[record[0]]
-		d2 := nameMapReversed[record[1]]
+		d1 := nameMap[record[0]]
+		d2 := nameMap[record[1]]
 		RR, err := strconv.ParseFloat(record[2], 64)
 		if err != nil {
 			panic(err)
@@ -559,14 +568,14 @@ func (exp *Experiment) LoadRRMatrix(path string) {
 }
 
 // LoadDxDPatients loads the DxD patients from a file created during a previous run. It takes as parameters the experiment
-// (exp), the patient map where to look up patient objects parsed from the input (pMap), and the file name (path). The
+// (exp), the patient map where to look up patient objects parsed from the input (pMap), and the file Name (path). The
 // function side effects the experiment's DxDPatients slice. It uses the pMap to match concrete patient objects with IDs
 // stored in the file to be able to fill the patients for each pair of diagnoses.
 func (exp *Experiment) LoadDxDPatients(pMap *PatientMap, path string) {
-	//reverse the exp name map
-	nameMapReversed := map[string]int{}
-	for i, name := range exp.NameMap {
-		nameMapReversed[name] = i
+	// map icd10 names to DIDs
+	nameMap := map[string]int{}
+	for did, icd10 := range exp.Icd10Map {
+		nameMap[icd10.Name] = did
 	}
 	//init DxDPatients map
 	for i, js := range exp.DxDPatients {
@@ -593,8 +602,8 @@ func (exp *Experiment) LoadDxDPatients(pMap *PatientMap, path string) {
 		if err != nil {
 			panic(err)
 		}
-		d1 := nameMapReversed[record[0]]
-		d2 := nameMapReversed[record[1]]
+		d1 := nameMap[record[0]]
+		d2 := nameMap[record[1]]
 		pidStrings := strings.Split(record[2], ",")
 		for _, pidString := range pidStrings {
 			pid := pMap.PIDStringMap[pidString]
@@ -605,7 +614,7 @@ func (exp *Experiment) LoadDxDPatients(pMap *PatientMap, path string) {
 }
 
 // SaveRRMatrix stores the RR matrix calculated for the given experiment. The diagnosis pairs from the matrix are
-// stored line per line as follows: medical name 1, medical name 2, RR.
+// stored line per line as follows: medical Name 1, medical Name 2, RR.
 func (exp *Experiment) SaveRRMatrix(path string) {
 	file, err := os.Create(path)
 	if err != nil {
@@ -618,7 +627,7 @@ func (exp *Experiment) SaveRRMatrix(path string) {
 	}()
 	for i, js := range exp.DxDRR {
 		for j, RR := range js {
-			fmt.Fprintf(file, "%s\t%s\t%s\n", exp.NameMap[i], exp.NameMap[j],
+			fmt.Fprintf(file, "%s\t%s\t%s\n", exp.Icd10Map[i].Name, exp.Icd10Map[j].Name,
 				strconv.FormatFloat(RR, 'E', -1, 64))
 		}
 	}
@@ -635,17 +644,17 @@ func (exp *Experiment) SaveDxDPatients(path string) {
 			panic(err)
 		}
 	}()
-	for i, js := range exp.DxDPatients {
-		for k, ps := range js {
-			if len(js) > 0 {
+	for did, patientPairs := range exp.DxDPatients {
+		for pairIdx, pair := range patientPairs {
+			if len(patientPairs) > 0 {
 				patients := ""
-				for j, p := range ps {
-					patients = patients + p.PIDString
-					if j != len(ps)-1 {
+				for patientIdx, patient := range pair {
+					patients = patients + patient.PIDString
+					if patientIdx != len(pair)-1 {
 						patients = patients + ","
 					}
 				}
-				fmt.Fprintf(file, "%s\t%s\t%s\n", exp.NameMap[i], exp.NameMap[k], patients)
+				fmt.Fprintf(file, "%s\t%s\t%s\n", exp.Icd10Map[did].Name, exp.Icd10Map[pairIdx].Name, patients)
 			}
 		}
 	}
@@ -671,7 +680,7 @@ func MergeCohorts(cohorts []*Cohort) *Cohort {
 		}
 	}
 	fmt.Println("Merged cohort")
-	cohort1.Log(utils.MinInt(len(cohort1.DCtr), 22))
+	cohort1.Log(22)
 	return cohort1
 }
 
@@ -681,7 +690,7 @@ func (cohort Cohort) Log(max int) {
 	fmt.Println("Age group: ", cohort.AgeGroup, " Sex: ", cohort.Sex, " Region: ", cohort.Region, " Nr of patients: ", cohort.NofPatients, " "+
 		"Nr of diagnoses: ", cohort.NofDiagnoses)
 	fmt.Println("DCtr: [")
-	for i := 0; i < max; i++ {
+	for i := 0; i < utils.MinInt(max, len(cohort.DCtr)); i++ {
 		fmt.Print(cohort.DCtr[i], ", ")
 	}
 	fmt.Println("...]")
@@ -696,8 +705,9 @@ type Pair struct {
 // requiring a minimum number of patients that is diagnosed with the disease pair, and a minimum RR score.
 func (exp *Experiment) selectDiagnosisPairs(minPatients int, minRR float64) []*Pair {
 	fmt.Println("Selecting diagnosis pairs for building trajectories...")
-	pairs := []*Pair{}
-	nofDiagnosisCodes := len(exp.NameMap)
+	var pairs []*Pair
+	// fixme: should we use exp.NofDiagnosisCodes?
+	nofDiagnosisCodes := len(exp.Icd10Map)
 	for i := 0; i < nofDiagnosisCodes; i++ {
 		for j := i; j < nofDiagnosisCodes; j++ {
 			occurs := len(exp.DxDPatients[i][j])

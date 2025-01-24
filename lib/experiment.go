@@ -59,7 +59,7 @@ type ExperimentParams struct {
 	NrOfThreads          int
 }
 
-// Run a TriNetX experiment with the given parameters.
+// Run runs a TriNetX experiment with the given parameters.
 func Run(args *ExperimentParams) (err error) {
 	defer func() {
 		// converts any panics into errors to avoid crashing the app
