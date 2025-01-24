@@ -137,7 +137,7 @@ func convertTrajectoriesToGraph(exp *Experiment) ([]int, [][][]int) {
 	return nodes, am
 }
 
-func printTrajectory(trajectory Trajectory, exp Experiment, w io.Writer) {
+func printTrajectory(trajectory *Trajectory, exp *Experiment, w io.Writer) {
 	TID := trajectory.ID
 	nodes := trajectory.Diagnoses
 	edges := trajectory.Diagnoses
@@ -185,11 +185,11 @@ func printTrajectories(exp *Experiment, name string) {
 			panic(err)
 		}
 	}()
+
 	// open graph
 	fmt.Fprintf(file, "graph [\n\tdirected 1\n\tmultigraph 1\n")
-	trajects := exp.Trajectories
-	for _, traject := range trajects {
-		printTrajectory(*traject, *exp, file)
+	for _, t := range exp.Trajectories {
+		printTrajectory(t, exp, file)
 	}
 	// close graph
 	fmt.Fprintf(file, "]\n")
@@ -206,13 +206,11 @@ func printIndividualTrajectories(exp *Experiment, name string) {
 			panic(err)
 		}
 	}()
-	trajects := exp.Trajectories
-	for _, traject := range trajects {
+
+	for _, t := range exp.Trajectories {
 		// new graph per trajectory
 		fmt.Fprintf(file, "graph [\n\tdirected 1\n\tmultigraph 1\n")
-
-		printTrajectory(*traject, *exp, file)
-
+		printTrajectory(t, exp, file)
 		// close graph
 		fmt.Fprintf(file, "]\n")
 	}

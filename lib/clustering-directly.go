@@ -218,6 +218,10 @@ func convertToGml(exp *Experiment, input, output string) {
 		// print header
 		fmt.Fprintf(ofile, "graph [\n\tdirected 1\n\tmultigraph 1\n")
 		nodePrinted := map[int]bool{}
+
+		// TODO: use printTrajectory(t, exp, ofile) to print the trajectories
+		//  right now I don't have the means to test the output of this function
+
 		// print nodes
 		for _, t := range collected {
 			for _, node := range t.Diagnoses {
