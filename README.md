@@ -586,7 +586,7 @@ passed via CLI.
 
 ### 3. Build the experiment's trajectories.
 
-The trajectories are built by calling the function `trajectory.BuildTrajectories`. The signature of this function is:
+The trajectories are built by calling the function `BuildTrajectories`. The signature of this function is:
 
 ```
 
@@ -595,7 +595,7 @@ BuildTrajectories(exp *Experiment, minP, maxL, minL int, minT, maxT, minRR float
 ```
 
 The parameters are:
-* the `trajectory.Experiment` object `exp` created in step 1
+* the `Experiment` object `exp` created in step 1
 * the `minP` parameter for the minimum number of patients for a trajectory to be considered. This is a parameter passed 
 via the CLI.
 * the `minL` and `maxL` parameters respectively for the minimum and maximum length for a trajectory to be considered. 
@@ -606,12 +606,12 @@ These parameters are passed via the CLI.
 
 ### 4. Output the found trajectories to disk.
 
-The trajectories can be outputted to disk by calling the `trajectory.PrintTrajectoriesToFile` function. This function 
+The trajectories can be outputted to disk by calling the `PrintTrajectoriesToFile` function. This function 
 takes as input the experiment object created in step 1 and an output path. 
 
 ### 5. Cluster the trajectories and output the clusters to disk.
 
-The trajectories can be clustered by calling the function `cluster.ClusterTrajectories`. The signature of this 
+The trajectories can be clustered by calling the function `ClusterTrajectories`. The signature of this 
 function is:
 
 ```
