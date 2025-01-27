@@ -139,13 +139,13 @@ func convertTrajectoriesToGraph(exp *Experiment) ([]int, [][][]int) {
 
 func printTrajectory(trajectory *Trajectory, exp *Experiment, w io.Writer) {
 	TID := trajectory.ID
-	nodes := trajectory.Diagnoses
-	edges := trajectory.Diagnoses
+	diagnoses := trajectory.Diagnoses
+	length := len(diagnoses) - 1
 	icd10Map := exp.Icd10Map
 	d1 := trajectory.Diagnoses[0]
 
 	// print nodes
-	for _, node := range nodes {
+	for _, node := range diagnoses {
 		icd10 := icd10Map[node]
 		fmt.Fprintf(w, "\tnode [\n\t\tid %d\n\t\tlabel \"%s\"\n\t", node, icd10.Name)
 		fmt.Fprintf(w, "\tlevel %d\n", icd10.Level)
@@ -159,15 +159,13 @@ func printTrajectory(trajectory *Trajectory, exp *Experiment, w io.Writer) {
 	}
 
 	// print edges
-	for i := 0; i < len(edges)-1; i++ {
-		source := edges[i]
-		target := edges[i+1]
-		first := utils.BoolToInt(i == 0)
-		last := utils.BoolToInt(i == len(edges)-2)
-		d2 := trajectory.Diagnoses[i]
-		patients := trajectory.PatientNumbers[i]
+	for idx := 0; idx < length; idx++ {
+		source := diagnoses[idx]
+		target := diagnoses[idx+1]
+		d2 := trajectory.Diagnoses[idx]
+		patients := trajectory.PatientNumbers[idx]
 		RR := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
-		fmt.Fprintf(w, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttfirst %d\n\t\ttlast %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\t\tRR \"%s\"\n\t]\n", TID, first, last, source, target, patients, RR))
+		fmt.Fprintf(w, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttlen %d\n\t\ttidx %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\t\tRR \"%s\"\n\t]\n", TID, length, idx, source, target, patients, RR))
 	}
 }
 
