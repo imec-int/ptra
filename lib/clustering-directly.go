@@ -239,15 +239,14 @@ func convertToGml(exp *Experiment, input, output string) {
 		}
 		for _, t := range collected {
 			d1 := t.Diagnoses[0]
+			tlen := len(t.Diagnoses)
 			for i := 1; i < len(t.Diagnoses); i++ {
 				d2 := t.Diagnoses[i]
 				if !edgePrinted[d1][d2] {
 					edgePrinted[d1][d2] = true
 					n := t.PatientNumbers[i-1]
 					RR := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
-					tfirst := utils.BoolToInt(i == 1)
-					tend := utils.BoolToInt(i == len(t.Diagnoses)-1)
-					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttfirst %d\n\t\ttlast %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\tRR \"%s\"\n\t]\n", t.ID, tfirst, tend, d1, d2, n, RR))
+					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttlen %d\n\t\ttidx %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\tRR \"%s\"\n\t]\n", t.ID, tlen, i, d1, d2, n, RR))
 				}
 				d1 = d2
 			}
