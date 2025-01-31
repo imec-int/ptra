@@ -227,11 +227,20 @@ func convertToGml(exp *Experiment, input, output string) {
 			for _, node := range t.Diagnoses {
 				if _, ok := nodePrinted[node]; !ok {
 					icd10 := exp.Icd10Map[node]
-					fmt.Fprintf(ofile, fmt.Sprintf("\tnode [\n\t\tid %d\n\t\tlabel\"%s\"\n\t]\n", node, icd10.Name))
+					fmt.Fprintf(ofile, "\tnode [\n\t\tid %d\n\t\tlabel \"%s\"\n\t", node, icd10.Name)
+					fmt.Fprintf(ofile, "\tlevel %d\n", icd10.Level)
+					for idx, cat := range icd10.Categories {
+						if cat == "NONE" {
+							break
+						}
+						fmt.Fprintf(ofile, "\t\tcat%d \"%s\"\n", idx, cat)
+					}
+					fmt.Fprintf(ofile, "\t]\n")
 					nodePrinted[node] = true
 				}
 			}
 		}
+
 		// print edges
 		edgePrinted := make([][]bool, exp.NofDiagnosisCodes)
 		for i, _ := range edgePrinted {
