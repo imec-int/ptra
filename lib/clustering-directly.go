@@ -246,7 +246,7 @@ func convertToGml(exp *Experiment, input, output string) {
 					edgePrinted[d1][d2] = true
 					n := t.PatientNumbers[i-1]
 					RR := strconv.FormatFloat(exp.DxDRR[d1][d2], 'f', 2, 64)
-					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttlen %d\n\t\ttidx %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\tRR \"%s\"\n\t]\n", t.ID, tlen, i, d1, d2, n, RR))
+					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttlen %d\n\t\ttidx %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\t\tRR \"%s\"\n\t]\n", t.ID, tlen, i, d1, d2, n, RR))
 				}
 				d1 = d2
 			}
