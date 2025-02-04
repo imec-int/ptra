@@ -244,9 +244,9 @@ func convertToGml(exp *Experiment, input, output string) {
 			edgePrinted[i] = make([]bool, exp.NofDiagnosisCodes)
 		}
 		for _, t := range collected {
+			tlen := len(t.Diagnoses) - 1
 			d1 := t.Diagnoses[0]
-			tlen := len(t.Diagnoses)
-			for i := 1; i < len(t.Diagnoses); i++ {
+			for i := 1; i <= tlen; i++ {
 				d2 := t.Diagnoses[i]
 				if !edgePrinted[d1][d2] {
 					edgePrinted[d1][d2] = true
