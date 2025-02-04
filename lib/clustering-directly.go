@@ -239,21 +239,14 @@ func convertToGml(exp *Experiment, input, output string) {
 		}
 
 		// print edges
-		edgePrinted := make([][]bool, exp.NofDiagnosisCodes)
-		for i, _ := range edgePrinted {
-			edgePrinted[i] = make([]bool, exp.NofDiagnosisCodes)
-		}
 		for _, t := range collected {
 			tlen := len(t.Diagnoses) - 1
 			for idx := 0; idx < tlen; idx++ {
 				source := t.Diagnoses[idx]
 				target := t.Diagnoses[idx+1]
-				if !edgePrinted[source][target] {
-					edgePrinted[source][target] = true
-					n := t.PatientNumbers[idx]
-					RR := strconv.FormatFloat(exp.DxDRR[source][target], 'f', 2, 64)
-					fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttlen %d\n\t\ttidx %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\t\tRR \"%s\"\n\t]\n", t.ID, tlen, idx, source, target, n, RR))
-				}
+				n := t.PatientNumbers[idx]
+				RR := strconv.FormatFloat(exp.DxDRR[source][target], 'f', 2, 64)
+				fmt.Fprintf(ofile, fmt.Sprintf("\tedge [\n\t\ttid %d\n\t\ttlen %d\n\t\ttidx %d\n\t\tsource %d\n\t\ttarget %d\n\t\tpatients %d\n\t\tRR \"%s\"\n\t]\n", t.ID, tlen, idx, source, target, n, RR))
 			}
 		}
 		fmt.Fprintf(ofile, "]\n")
