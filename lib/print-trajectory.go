@@ -159,7 +159,7 @@ func printTrajectory(trajectory *Trajectory, exp *Experiment, w io.Writer) {
 
 	// print edges
 	tlen := len(diagnoses) - 1
-	for idx := 0; idx <= tlen; idx++ {
+	for idx := 0; idx < tlen; idx++ {
 		source := diagnoses[idx]
 		target := diagnoses[idx+1]
 		d2 := trajectory.Diagnoses[idx]
