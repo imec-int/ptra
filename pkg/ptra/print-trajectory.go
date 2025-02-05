@@ -16,11 +16,11 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package lib
+package ptra
 
 import (
 	"fmt"
-	"github.com/imec-int/ptra/lib/utils"
+	"github.com/imec-int/ptra/internal/utils"
 	"io"
 	"os"
 	"path/filepath"

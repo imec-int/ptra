@@ -16,13 +16,13 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package lib
+package ptra
 
 import (
 	"encoding/csv"
 	"fmt"
 	"github.com/exascience/pargo/parallel"
-	"github.com/imec-int/ptra/lib/utils"
+	"github.com/imec-int/ptra/internal/utils"
 	"github.com/valyala/fastrand"
 	"io"
 	"math"
