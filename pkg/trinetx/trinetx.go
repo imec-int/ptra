@@ -16,12 +16,13 @@
 // License and Additional Terms along with this program. If not, see
 // <https://github.com/ExaScience/ptra/blob/master/LICENSE.txt>.
 
-package lib
+package trinetx
 
 import (
 	"errors"
 	"fmt"
-	"github.com/imec-int/ptra/lib/utils"
+	"github.com/imec-int/ptra/internal/utils"
+	ptra "github.com/imec-int/ptra/pkg/ptra"
 	"os"
 	"path"
 	"runtime"
@@ -83,13 +84,13 @@ func Run(args *ExperimentParams) (err error) {
 
 	// start execution
 	// 1. Parse input into experiment
-	tinfo := map[string][]*TumorInfo{}
+	tinfo := map[string][]*ptra.TumorInfo{}
 	if args.TumorInfo != "" {
-		tinfo = ParsetTriNetXTumorData(args.TumorInfo) // need parsed patients to be able to parse tumor data file
+		tinfo = ptra.ParsetTriNetXTumorData(args.TumorInfo) // need parsed patients to be able to parse tumor data file
 	}
 
-	exp, patients := ParseTriNetXData(args.Name, args.PatientInfo, args.PatientDiagnoses, args.DiagnosisInfo,
-		args.TreatmentInfo, args.NofAgeGroups, args.Lvl, args.MinYears, args.MaxYears, args.ICD9ToICD10File, GetPatientFilters(args.PFilters, tinfo))
+	exp, patients := ptra.ParseTriNetXData(args.Name, args.PatientInfo, args.PatientDiagnoses, args.DiagnosisInfo,
+		args.TreatmentInfo, args.NofAgeGroups, args.Lvl, args.MinYears, args.MaxYears, args.ICD9ToICD10File, ptra.GetPatientFilters(args.PFilters, tinfo))
 
 	// 2. Initialise relative risk ratios or load them from file from a previous run
 	if args.LoadRR != "" {
@@ -109,13 +110,13 @@ func Run(args *ExperimentParams) (err error) {
 
 	// 3. Build the trajectories
 	exp.BuildTrajectories(args.MinPatients, args.MaxTrajectoryLength, args.MinTrajectoryLength, args.MinYears, args.MaxYears, args.RR,
-		GetTrajectoryFilters(args.TFilters, exp))
+		ptra.GetTrajectoryFilters(args.TFilters, exp))
 
 	// 4. Plot trajectories to file
 	exp.PrintTrajectoriesToFile(outputDir)
 	fmt.Println("Collected trajectories: ")
 	for i := 0; i < utils.MinInt(len(exp.Trajectories), 100); i++ {
-		LogTrajectory(exp.Trajectories[i], exp)
+		ptra.LogTrajectory(exp.Trajectories[i], exp)
 	}
 
 	// 5. Perform clustering
@@ -125,7 +126,7 @@ func Run(args *ExperimentParams) (err error) {
 			gi, _ := strconv.ParseInt(g, 10, 0)
 			clusterGranularityList = append(clusterGranularityList, int(gi))
 		}
-		clusteringErr := ClusterTrajectories(exp, clusterGranularityList, outputDir)
+		clusteringErr := ptra.ClusterTrajectories(exp, clusterGranularityList, outputDir)
 		if clusteringErr != nil {
 			return clusteringErr
 		}

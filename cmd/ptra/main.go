@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/imec-int/ptra/lib"
+	"github.com/imec-int/ptra/pkg/trinetx"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -150,7 +150,7 @@ func getFileName(s, help string) string {
 }
 
 func main() {
-	var params = lib.ExperimentParams{}
+	var params = trinetx.ExperimentParams{}
 	var flags flag.FlagSet
 
 	// extract ExperimentParams from command line params
@@ -239,7 +239,7 @@ func main() {
 		fmt.Fprint(&command, " --nrOfThreads ", params.NrOfThreads)
 	}
 
-	err := lib.Run(&params)
+	err := trinetx.Run(&params)
 	if err != nil {
 		panic(err)
 	}
